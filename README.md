@@ -37,14 +37,15 @@ gradle shadowJar
 ```bash
 gradle cleanEclipse eclipse
 ```
-then import it into your eclipse workspace by using File->Import projects menu option
+then import it into your eclipse workspace by using File->Import projects menu option. 
+then add connect-api-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
 
 ## Installing Connector 
 
 * All the scripts for running Kafka Connect will use the CLASSPATH environment variable if it is set when they are invoked.
-* Copy the built jar from `build/libs` to a directory  where Kafka server is installed or accessible. example: <<kafka install>>/voltdb/
+* Copy the built jar from `build/libs` to a directory  where Kafka server is installed or accessible. example: path-to-kafka-root/voltdb/
 * copy /config/voltdb-sink-connector.properties to a folder and configure connector properties
-* configure connect-standalone.properties or connect-distributed.properties under <<kafka install directory>>/config/
+* configure connect-standalone.properties or connect-distributed.properties under path-to-kafka-root/config/
 
 ## Distributed Connect Properties
 - `bootstrap.servers` (mandatory) Kafka servers the connector will connect to
@@ -70,23 +71,40 @@ then import it into your eclipse workspace by using File->Import projects menu o
 - `connector.class` (default:org.voltdb.connect.kafka.KafkaSinkConnector) The Java class for the connector
 - `voltdb.connection.user` The user name to connect VoltDb
 - `voltdb.connection.password` The password to connect VoltDB
-- `voltdb.servers` (mandatory) A list of Voltdb server nodes with ',' as delimiter. Example: 10.10.182.120:21212,10.10.182.122:21212.
+- `voltdb.servers` (mandatory) A list of Voltdb server nodes with ',' as delimiter. example: server1:21212,server2:21212
 - `voltdb.procedure` Specify the procedure name to be used to insert data to VoltDB.
 - `formatter.factory.class` Specify the data formatter factory used to convert Kafka data into the format required by VoltDB procedure.
    org.voltdb.connect.formatter.CSVFormatterFactory is used as default.
 - `formatter.type` The type of formatter, such as csv, tsv.
 
-#Instructions for running
+
+##Instructions for running
 
 * Download and install kafka 0.10.0.0 or the latest
-* Start VoltDB, create correct table and store procedure for the connector
-* Start zookeeper
-  	./bin/zookeeper-server-start /config/zookeeper.properties
-* Start Kafka server  
+* Start VoltDB, create correct table and store procedure for the connector:
+  	add a table to VoltDB for testing:
+    CREATE TABLE STOCK (
+		ID integer not null,
+		Symbol varchar(50),
+		Quantity integer,
+		TradeType varchar(50),
+		price varchar(50),
+		constraint pk_stock PRIMARY KEY(ID)
+   );
+* Start zookeeper. Issue the command under Kafka root directory:
+  	./bin/zookeeper-server-start.sh config/zookeeper.properties
+  	
+* Start Kafka server.  Issue the command under Kafka root directory:
    	./bin/kafka-server-start.sh config/server.properties
+   	
 * start the connector
-  	export CLASSPATH=<<Kafka Install Dir>>/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar
-  	./bin/connect-standalone.sh /config/connect-standalone.properties  /voltdb/voltdb-sink-connector.properties
+    set voltdb.procedure=stock.insert for the connector
+    Issue the following command under Kafka root directory:
+  	export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar
+  	./bin/connect-standalone.sh  onfig/connect-standalone.properties  voltdb/voltdb-sink-connector.properties
   
-
-
+* Start Kafka producer, Issue the following command under Kafka root directory:
+  ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic connect-test  
+  The topic must match the topic the connector is listening to.
+  Enter "6,GOOG,1000,BUY,50000"
+  Run a select query agaisnt VoltDB to verify a row is added to table stock.

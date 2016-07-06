@@ -47,6 +47,7 @@ import org.voltdb.client.ClientFactory;
 import org.voltdb.client.ClientResponse;
 import org.voltdb.client.NoConnectionsException;
 import org.voltdb.client.ProcedureCallback;
+import org.voltdb.connect.converter.Converter;
 import org.voltdb.connect.formatter.AbstractFormatterFactory;
 import org.voltdb.importer.formatter.FormatException;
 import org.voltdb.importer.formatter.Formatter;
@@ -68,6 +69,11 @@ public class ConnectorTask extends SinkTask {
      * <code>m_formatter</code> The formatter to converting kafka data into the data format required by Volt procedure
      */
     private Formatter<String> m_formatter;
+
+    /**
+     * <code>m_converter</code> Convert the value of SinkRecord to byte array.
+     */
+    private Converter m_converter;
 
     /**
      * <code>m_client</code> Volt client
@@ -115,13 +121,15 @@ public class ConnectorTask extends SinkTask {
         if(username != null && !username.isEmpty() && password != null && !password.isEmpty()){
             config = new ClientConfig(username, password);
         }
-
+        config.setReconnectOnConnectionLoss(true);
         m_client = ClientFactory.createClient(config);
+
         m_procName = props.get(ConnectorConfig.CONNECTOR_STORE_PROC);
         if(m_procName == null || m_procName.isEmpty()){
             throw new ConfigException("Missing store procesure.");
         }
-        String servers = props.get("volt.servers");
+
+        String servers = props.get(ConnectorConfig.CONNECTOR_SERVERS);
         if(servers == null){
             throw new ConfigException("Missing VoltDB hosts.");
         }
@@ -135,9 +143,15 @@ public class ConnectorTask extends SinkTask {
         if(formatterClass == null || formatterClass.isEmpty()){
             formatterClass = "org.voltdb.connect.formatter.CSVFormatterFactory";
         }
+
         String formatterType = props.get(ConnectorConfig.CONNECTOR_DATA_FORMATTER_TYPE);
         if(formatterType == null || formatterType.isEmpty()){
             formatterType = "csv";
+        }
+
+        String converterClass = props.get(ConnectorConfig.RECORD_CONVERT_CLASS);
+        if(converterClass == null || converterClass.isEmpty()){
+            converterClass = "org.voltdb.connect.converter.JsonDataConverter";
         }
 
         Properties formatProperties = new Properties();
@@ -147,8 +161,11 @@ public class ConnectorTask extends SinkTask {
             Class<?> className = Class.forName(formatterClass);
             AbstractFormatterFactory factory = (AbstractFormatterFactory) className.newInstance();
             m_formatter = factory.create(formatterType, formatProperties);
+
+            className = Class.forName(converterClass);
+            m_converter = (Converter) className.newInstance();
         } catch (Exception e) {
-            LOGGER.warn("Can't find any formatter matching ", formatterClass);
+            LOGGER.error("Can't create formatter or converte: %s", e.getMessage());
             throw new ConnectException(e.getMessage());
         }
     }
@@ -168,7 +185,7 @@ public class ConnectorTask extends SinkTask {
             m_currentBatchCnt.getAndIncrement();
             String data = null;
             try {
-                data = new String((byte[]) record.value(), StandardCharsets.UTF_8);
+                data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
                 ConnectorProcedureCallback cb = new ConnectorProcedureCallback(m_flushSet, partitionOffset);
                 if (!m_client.callProcedure(cb, m_procName, m_formatter.transform(data))) {
                     if(m_flushSet.contains(partitionOffset)){
@@ -192,7 +209,9 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
 
-        LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
+        if(m_currentBatchCnt.get() == 0){
+            return;
+        }
 
         //wait for all the records to be persisted to VoltDB
         int backoffCount = 0;
@@ -204,13 +223,14 @@ public class ConnectorTask extends SinkTask {
             }
         }
         if(m_flushSet.size() == 0){
-            return;
+            LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
+            m_currentBatchCnt.set(0);
+        }else{
+            m_currentBatchCnt.set(0);
+            m_flushSet.clear();
+            //trigger the connect framework to re-put the batch records
+            throw new ConnectException("ConnectorTask flush: there are uncommited records.");
         }
-        m_currentBatchCnt.set(0);
-        m_flushSet.clear();
-
-        //trigger the connect framework to re-put the batch records
-        throw new ConnectException("ConnectorTask flush: there are uncommited records.");
     }
 
     @Override
@@ -277,9 +297,6 @@ public class ConnectorTask extends SinkTask {
 
         @Override
         public void clientCallback(ClientResponse response) throws Exception {
-            if(response.getAppStatus() != ClientResponse.SUCCESS){
-                LOGGER.warn("ConnectorProcedure callback failed %s", response.getAppStatusString());
-            }
             m_flushSet.remove(m_offset);
         }
     }

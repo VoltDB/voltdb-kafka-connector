@@ -96,6 +96,7 @@ public class KafkaSinkConnector extends Connector {
 
     }
 
+    @Override
     public ConfigDef config() {
         return ConnectorConfig.getConfig();
     }

@@ -47,18 +47,20 @@ public class ConnectorConfig extends AbstractConfig {
     public static final String CONNECTOR_STORE_PROC = "voltdb.procedure";
     public static final String CONNECTOR_DATA_FORMATTER = "formatter.factory.class";
     public static final String CONNECTOR_DATA_FORMATTER_TYPE = "formatter.type";
+    public static final String RECORD_CONVERT_CLASS = "data.converter.class";
 
     private static ConfigDef CONNFIG = new ConfigDef();
     static{
         CONNFIG.define(CONNECTOR_NAME, Type.STRING, Importance.HIGH, "Unique connector name.");
         CONNFIG.define(CONNECTOR_CLASS, Type.STRING, Importance.HIGH, "The Java class for the connector.");
         CONNFIG.define(CONNECTOR_TASKS_MAX, Type.INT, Importance.HIGH, "The maximum number of tasks that should be created for this connector");
-        CONNFIG.define(CONNECTOR_USER, Type.STRING, Importance.HIGH, "The user name to connect VoltDb");
-        CONNFIG.define(CONNECTOR_PASSWORD, Type.STRING, Importance.HIGH, "The password to connect VoltDB");
+        CONNFIG.define(CONNECTOR_USER, Type.STRING, Importance.LOW, "The user name to connect VoltDb");
+        CONNFIG.define(CONNECTOR_PASSWORD, Type.STRING, Importance.LOW, "The password to connect VoltDB");
         CONNFIG.define(CONNECTOR_SERVERS, Type.STRING, Importance.HIGH, "A list of Voltdb server nodes");
         CONNFIG.define(CONNECTOR_STORE_PROC, Type.STRING, Importance.HIGH, "The procedure name to be used to insert data to VoltDB.");
-        CONNFIG.define(CONNECTOR_DATA_FORMATTER, Type.STRING, Importance.HIGH, "The data formatter factory used to convert Kafka data");
-        CONNFIG.define(CONNECTOR_DATA_FORMATTER_TYPE, Type.STRING, Importance.HIGH, "The type of formatter, such as csv, tsv.");
+        CONNFIG.define(CONNECTOR_DATA_FORMATTER, Type.STRING, "org.voltdb.connect.formatter.CSVFormatterFactory", Importance.LOW, "The data formatter factory used to convert Kafka data");
+        CONNFIG.define(CONNECTOR_DATA_FORMATTER_TYPE, Type.STRING, "csv", Importance.LOW, "The type of formatter, such as csv, tsv.");
+        CONNFIG.define(RECORD_CONVERT_CLASS, Type.STRING, "org.voltdb.connect.converter.JsonDataConverter", Importance.LOW, "The Java class for data conversion from SinkRecord");
     }
 
 

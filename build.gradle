@@ -51,7 +51,12 @@ dependencies {
 
     connect ('org.apache.kafka:connect-api:0.10.0.0') { transitive = false }
     connect ('org.apache.kafka:kafka-clients:0.10.0.0') { transitive = false }
-
+    connect ('org.apache.kafka:connect-json:0.10.0.0') { transitive = false }
+    voltlib ('com.fasterxml.jackson.core:jackson-databind:2.5.3') { transitive = true }
+    voltlib ('com.fasterxml.jackson.core:jackson-annotations:2.5.3') { transitive = true }
+    voltlib ('com.fasterxml.jackson.core:jackson-core:2.5.3') { transitive = true }
+    voltlib ('com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.5.3') { transitive = true }
+    
     compile configurations.connect
     compile configurations.voltlib
 }

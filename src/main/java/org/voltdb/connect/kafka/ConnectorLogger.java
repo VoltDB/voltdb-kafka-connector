@@ -39,7 +39,7 @@ import org.voltcore.utils.RateLimitedLogger;
 public class ConnectorLogger {
 
     final static long SUPPRESS_INTERVAL = 10;
-    final private VoltLogger LOGGER = new VoltLogger("SinkConnector");
+    final private VoltLogger LOGGER = new VoltLogger("KafkaSinkConnector");
 
     public ConnectorLogger() {
     }
