@@ -1,7 +1,6 @@
-# voltdb-kafka-connector
-VoltDB connector for Kafka
+# VoltDB Sink Connector
 
-VoltDB connector for Kafka is a Kafka Connector for copying data from Kafka to VoltDB.
+The connector is for moving data from Kafka to VoltDB.
 
 ## How to build artifacts and setup Eclipse
 
@@ -82,6 +81,8 @@ then add connect-api-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
 
 * Download and install kafka 0.10.0.0 or the latest
 * Start VoltDB, create correct table and store procedure for the connector:
+
+```sql
   	add a table to VoltDB for testing:
     CREATE TABLE STOCK (
 		ID integer not null,
@@ -91,20 +92,29 @@ then add connect-api-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
 		price varchar(50),
 		constraint pk_stock PRIMARY KEY(ID)
    );
-* Start zookeeper. Issue the command under Kafka root directory:
+```
+* Start zookeeper. Issue the following command under Kafka root directory:
+
   	./bin/zookeeper-server-start.sh config/zookeeper.properties
   	
 * Start Kafka server.  Issue the command under Kafka root directory:
+
    	./bin/kafka-server-start.sh config/server.properties
    	
 * start the connector
-    set voltdb.procedure=stock.insert for the connector
+    set voltdb.procedure=stock.insert for the connector.
     Issue the following command under Kafka root directory:
+    
   	export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar
+  	
   	./bin/connect-standalone.sh  onfig/connect-standalone.properties  voltdb/voltdb-sink-connector.properties
   
 * Start Kafka producer, Issue the following command under Kafka root directory:
+
   ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic connect-test  
+  
   The topic must match the topic the connector is listening to.
+  
   Enter "6,GOOG,1000,BUY,50000"
+  
   Run a select query agaisnt VoltDB to verify a row is added to table stock.
