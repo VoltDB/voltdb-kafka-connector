@@ -30,6 +30,10 @@ import org.voltdb.importer.formatter.Formatter;
 import org.voltdb.importer.formatter.builtin.VoltCSVFormatter;
 import org.voltdb.importer.formatter.builtin.VoltSuperCSVFormatter;
 
+/**
+ * CSVFormatterFactory create VoltCSVFormatter or VoltSuperCSVFormatter which converts comma separated string into the values
+ * for each of the table columns. VoltDB client will then take these values and persist them via store procedure.
+ */
 public class CSVFormatterFactory extends AbstractFormatterFactory {
 
     public static final String[]  SUPER_CVS_PROPS = {"trimunquoted","nowhitespace","blank","nullstring"};

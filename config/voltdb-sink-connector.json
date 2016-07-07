@@ -1,0 +1,16 @@
+
+{
+   "name":"KafkaSinkConnector",
+   "config":{
+      "connector.class":"org.voltdb.connect.kafka.KafkaSinkConnector",
+      "tasks.max":"1",
+      "voltdb.servers":"localhost:21212",
+      "voltdb.procedure":"STOCK.insert",
+      "formatter.factory.class":"org.voltdb.connect.formatter.CSVFormatterFactory",
+      "voltdb.connection.user":"",
+      "voltdb.connection.password":"",
+      "formatter.type":"csv",
+      "data.converter.class":"org.voltdb.connect.converter.JsonDataConverter",
+      "topics":"test"
+   }
+}
