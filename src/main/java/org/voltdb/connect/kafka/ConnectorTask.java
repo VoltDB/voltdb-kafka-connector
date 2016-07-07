@@ -39,12 +39,14 @@ import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.voltdb.client.Client;
 import org.voltdb.client.ClientConfig;
 import org.voltdb.client.ClientFactory;
 import org.voltdb.client.ClientResponse;
+import org.voltdb.client.ClientStatusListenerExt;
 import org.voltdb.client.NoConnectionsException;
 import org.voltdb.client.ProcedureCallback;
 import org.voltdb.connect.converter.Converter;
@@ -103,7 +105,9 @@ public class ConnectorTask extends SinkTask {
     /**
      * <code>m_serverConnected</code> A flag indicates if the VoltDb client is connected to servers.
      */
-    private AtomicBoolean m_serverConnected = new AtomicBoolean(false);
+    private AtomicBoolean m_connectionLost = new AtomicBoolean(false);
+
+
     /**
      * constructor
      */
@@ -117,10 +121,15 @@ public class ConnectorTask extends SinkTask {
         String username = props.get(ConnectorConfig.CONNECTOR_USER);
         String password = props.get(ConnectorConfig.CONNECTOR_PASSWORD);
 
-        ClientConfig config = new ClientConfig();
-        if(username != null && !username.isEmpty() && password != null && !password.isEmpty()){
-            config = new ClientConfig(username, password);
+        if(username == null){
+            username = "";
         }
+
+        if(password == null){
+            password = "";
+        }
+
+        ClientConfig config = new ClientConfig(username, password, new ClientStatusListener(m_connectionLost));
         config.setReconnectOnConnectionLoss(true);
         m_client = ClientFactory.createClient(config);
 
@@ -168,6 +177,8 @@ public class ConnectorTask extends SinkTask {
             LOGGER.error("Can't create formatter or converte: %s", e.getMessage());
             throw new ConnectException(e.getMessage());
         }
+
+        connect();
     }
 
     @Override
@@ -177,9 +188,11 @@ public class ConnectorTask extends SinkTask {
             return;
         }
 
-        connect();
-
         for (SinkRecord record : records) {
+
+            if(m_connectionLost.get()){
+                throw new RetriableException("All client connections to VoltDb have been lost.");
+            }
 
             String partitionOffset = Integer.toString(record.kafkaPartition()) + Long.toString(record.kafkaOffset());
             m_currentBatchCnt.getAndIncrement();
@@ -254,17 +267,16 @@ public class ConnectorTask extends SinkTask {
      * connect to VoltDB servers
      */
     private void connect(){
-        if(!m_serverConnected.get()){
-            for(String host : m_serverList){
-                try {
-                    m_client.createConnection(host.trim());
-                } catch (IOException e) {
-                    LOGGER.error("Could not create connection to %s", e, host);
-                    Throwables.propagate(e);
-                }
+
+        for(String host : m_serverList){
+            try {
+                m_client.createConnection(host.trim());
+            } catch (IOException e) {
+                LOGGER.error("Could not create connection to %s", e, host);
+                Throwables.propagate(e);
             }
-            m_serverConnected.compareAndSet(false, true);
         }
+
     }
 
     /**
@@ -297,7 +309,35 @@ public class ConnectorTask extends SinkTask {
 
         @Override
         public void clientCallback(ClientResponse response) throws Exception {
+            if(response.getAppStatus() == ClientResponse.CONNECTION_LOST || response.getAppStatus()  == ClientResponse.CONNECTION_TIMEOUT){
+                LOGGER.warn("Client response error: %s", response.getAppStatusString());
+            }
             m_flushSet.remove(m_offset);
+        }
+    }
+
+    /**
+     * Client status listener
+     *
+     */
+    private final  static class ClientStatusListener extends ClientStatusListenerExt{
+
+        private final AtomicBoolean m_connectionLost;
+
+        public ClientStatusListener(AtomicBoolean connectionLost){
+            super();
+            m_connectionLost = connectionLost;
+        }
+
+        @Override
+        public void connectionLost(String hostname, int port, int connectionsLeft, DisconnectCause cause){
+            LOGGER.info("A connection to the database has been lost. There are %d connections remaining.", connectionsLeft);
+            m_connectionLost.set(connectionsLeft == 0);
+        }
+
+        @Override
+        public void backpressure(boolean status) {
+            LOGGER.info("Backpressure from the database is causing a delay in processing requests.");
         }
     }
 }
