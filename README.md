@@ -48,8 +48,8 @@ then add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1
 * configure connect-standalone.properties or connect-distributed.properties under path-to-kafka-root/config/
 
 ### Distributed Connect Properties
-- `bootstrap.servers` (mandatory) Kafka servers the connector will connect to
-- `group.id` (mandatory, default connect-cluster) unique name for the cluster, used in forming the Connect cluster group.
+- **bootstrap.servers** (mandatory) Kafka servers the connector will connect to
+- **group.id** (mandatory, default connect-cluster) unique name for the cluster, used in forming the Connect cluster group.
 - `offset.storage.topic` (mandatory, default connect-offsets) The topic to store offset data for connectors in. This must be the same with the same group.id
 - `config.storage.topic` (mandatory, default connect-configs) The topic to store connector and task configuration data in. This must be the same with the same group.id.
    Manually create the topic to ensure single partition if needed.
@@ -96,21 +96,26 @@ then add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1
    );
 ```
 * Start zookeeper. Issue the following command under Kafka root directory:
+
 	```
   	./bin/zookeeper-server-start.sh config/zookeeper.properties
   	```
 * Start Kafka server.  Issue the command under Kafka root directory:
+
 	```
    	./bin/kafka-server-start.sh config/server.properties
    	```
-* start the connector
-    set voltdb.procedure=stock.insert for the connector.
+* Start the connector
+    set **voltdb.procedure=stock.insert** for the connector.
     Issue the following command under Kafka root directory:
+    
     ```
   	export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar 	
+  	
   	./bin/connect-standalone.sh  onfig/connect-standalone.properties  voltdb/voltdb-sink-connector.properties
     ```
 * Start Kafka producer, Issue the following command under Kafka root directory:
+
    ```
   ./bin/kafka-console-producer.sh --broker-list localhost:9092 --topic connect-test  
   ```
@@ -119,4 +124,4 @@ then add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1
   
   Enter "6,GOOG,1000,BUY,50000"
   
-  Run a select query agaisnt VoltDB to verify a row is added to table stock.
+  Run a select query against VoltDB to verify a row is added to table stock.
