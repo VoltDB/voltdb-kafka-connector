@@ -51,21 +51,21 @@ public class KafkaSinkConnector extends Connector {
     @Override
     public void start(Map<String, String> props) throws ConnectException {
 
-        LOGGER.info("Connector start.....");
+        LOGGER.info("VoltDB Kafka sink sonnector start.....");
         try {
             m_configProperties = props;
-            String connectorName = props.get(ConnectorConfig.CONNECTOR_NAME);
-            if(connectorName == null || connectorName.isEmpty()){
+            String connectorName = ConnectorTask.getStringProperty(props, ConnectorConfig.CONNECTOR_NAME, null);
+            if(connectorName == null){
                 m_configProperties.put(ConnectorConfig.CONNECTOR_NAME,"KafkaSinkConnector");
             }
 
-            String maxTasks = props.get(ConnectorConfig.CONNECTOR_TASKS_MAX);
-            if(maxTasks == null || maxTasks.isEmpty()){
+            int maxTasks = ConnectorTask.getIntProperty(props, ConnectorConfig.CONNECTOR_TASKS_MAX, 0);
+            if(maxTasks == 0){
                 m_configProperties.put(ConnectorConfig.CONNECTOR_TASKS_MAX, "1");
             }
 
-            String connectorClass = props.get(ConnectorConfig.CONNECTOR_CLASS);
-            if(connectorClass == null || connectorClass.isEmpty()){
+            String connectorClass = ConnectorTask.getStringProperty(props, ConnectorConfig.CONNECTOR_CLASS, null);
+            if(connectorClass == null){
                 m_configProperties.put(ConnectorConfig.CONNECTOR_CLASS, "org.voltdb.connect.kafka.KafkaSinkConnector");
             }
 

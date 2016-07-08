@@ -37,8 +37,6 @@ import org.apache.kafka.common.config.ConfigDef.Type;
  */
 public class ConnectorConfig extends AbstractConfig {
 
-    private static final ConnectorLogger LOGGER = new ConnectorLogger();
-
     public static final String CONNECTOR_VERSION = "KafkaConnect-1.0.0";
     public static final String CONNECTOR_NAME = "name";
     public static final String CONNECTOR_CLASS ="connector.class";
