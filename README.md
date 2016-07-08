@@ -87,7 +87,7 @@ then import it into your eclipse workspace by using File->Import projects menu o
    *org.voltdb.connect.formatter.CSVFormatterFactory* is used as default.
 - **formatter.type** The type of formatter, such as csv, tsv.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
-
+- **kerberos.authentication** The authentication module if enabled.
 
 #### Instructions for running
 

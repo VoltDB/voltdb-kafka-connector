@@ -37,6 +37,8 @@ import org.apache.kafka.common.config.ConfigDef.Type;
  */
 public class ConnectorConfig extends AbstractConfig {
 
+    private static final ConnectorLogger LOGGER = new ConnectorLogger();
+
     public static final String CONNECTOR_VERSION = "KafkaConnect-1.0.0";
     public static final String CONNECTOR_NAME = "name";
     public static final String CONNECTOR_CLASS ="connector.class";
@@ -48,6 +50,12 @@ public class ConnectorConfig extends AbstractConfig {
     public static final String CONNECTOR_DATA_FORMATTER = "formatter.factory.class";
     public static final String CONNECTOR_DATA_FORMATTER_TYPE = "formatter.type";
     public static final String RECORD_CONVERT_CLASS = "data.converter.class";
+    public static final String KERBEROS_AUTHENTICATION = "kerberos.authentication";
+    public static final String AUTO_RECONNECTION = "auto.reconnect.onloss";
+    public static final String FLUSH_RETRY_MAX = "flush.retry.max";
+    public static final String RESPONSE_TIMEOUT_MAX = "response.timeout.max";
+    public static final String PROCEDURE_TIMEOUT_MAX = "procedure.timeout.max";
+
 
     private static ConfigDef CONNFIG = new ConfigDef();
     static{
@@ -70,5 +78,31 @@ public class ConnectorConfig extends AbstractConfig {
 
     public ConnectorConfig(Map<String, String> props) {
         super(CONNFIG, props);
+    }
+
+    public static int getIntProperty(Map<String, String> props, String propName, int defaultValue){
+        int val = defaultValue;
+        String valString = props.get(propName);
+        if(valString != null && !valString.trim().isEmpty()){
+            try{
+                val = Integer.parseInt(valString);
+            } catch (NumberFormatException e){
+                LOGGER.warn("Error for property %s", e, propName);
+            }
+        }
+
+        return val;
+    }
+
+    public static String  getStringProperty(Map<String, String> props, String propName, String defaultValue){
+        String val = defaultValue;
+        String valString = props.get(propName);
+        if(valString != null){
+            valString= valString.trim();
+            if(!valString.isEmpty()){
+                val = valString;
+            }
+        }
+        return val;
     }
 }

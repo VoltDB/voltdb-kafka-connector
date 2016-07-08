@@ -118,19 +118,24 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void start(Map<String, String> props) {
 
-        String username = props.get(ConnectorConfig.CONNECTOR_USER);
-        String password = props.get(ConnectorConfig.CONNECTOR_PASSWORD);
-
-        if(username == null){
-            username = "";
-        }
-
-        if(password == null){
-            password = "";
-        }
+        String username = ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_USER, "");
+        String password = ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_PASSWORD, "");
 
         ClientConfig config = new ClientConfig(username, password, new ClientStatusListener(m_connectionLost));
-        config.setReconnectOnConnectionLoss(true);
+
+        String autoReconnect = ConnectorConfig.getStringProperty(props, ConnectorConfig.AUTO_RECONNECTION, "true");
+        if("true".equalsIgnoreCase(autoReconnect)){
+             config.setReconnectOnConnectionLoss(true);
+        }
+
+        config.setConnectionResponseTimeout(ConnectorConfig.getIntProperty(props, ConnectorConfig.RESPONSE_TIMEOUT_MAX, 0));
+        config.setProcedureCallTimeout(ConnectorConfig.getIntProperty(props, ConnectorConfig.PROCEDURE_TIMEOUT_MAX, 0));
+
+        String kerberos = ConnectorConfig.getStringProperty(props, ConnectorConfig.KERBEROS_AUTHENTICATION, null);
+        if( kerberos != null){
+            config.enableKerberosAuthentication(kerberos);
+        }
+
         m_client = ClientFactory.createClient(config);
 
         m_procName = props.get(ConnectorConfig.CONNECTOR_STORE_PROC);
@@ -148,20 +153,11 @@ public class ConnectorTask extends SinkTask {
             throw new ConfigException("Missing VoltDB hosts");
         }
 
-        String formatterClass = props.get(ConnectorConfig.CONNECTOR_DATA_FORMATTER);
-        if(formatterClass == null || formatterClass.isEmpty()){
-            formatterClass = "org.voltdb.connect.formatter.CSVFormatterFactory";
-        }
-
-        String formatterType = props.get(ConnectorConfig.CONNECTOR_DATA_FORMATTER_TYPE);
-        if(formatterType == null || formatterType.isEmpty()){
-            formatterType = "csv";
-        }
-
-        String converterClass = props.get(ConnectorConfig.RECORD_CONVERT_CLASS);
-        if(converterClass == null || converterClass.isEmpty()){
-            converterClass = "org.voltdb.connect.converter.JsonDataConverter";
-        }
+        String formatterClass = ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER,
+                                                                 "org.voltdb.connect.formatter.CSVFormatterFactory");
+        String formatterType =  ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER_TYPE, "csv");
+        String converterClass = ConnectorConfig.getStringProperty(props, ConnectorConfig.RECORD_CONVERT_CLASS,
+                                                                 "org.voltdb.connect.converter.JsonDataConverter");
 
         Properties formatProperties = new Properties();
         formatProperties.putAll(props);
@@ -173,8 +169,8 @@ public class ConnectorTask extends SinkTask {
 
             className = Class.forName(converterClass);
             m_converter = (Converter) className.newInstance();
-        } catch (Exception e) {
-            LOGGER.error("Can't create formatter or converte: %s", e.getMessage());
+        } catch (ClassNotFoundException  | InstantiationException | IllegalAccessException e) {
+            LOGGER.error("Can't create formatter or converter: %s", e.getMessage());
             throw new ConnectException(e.getMessage());
         }
 
@@ -191,6 +187,8 @@ public class ConnectorTask extends SinkTask {
         for (SinkRecord record : records) {
 
             if(m_connectionLost.get()){
+
+                //trigger Kafka consumer to pause and retry.
                 throw new RetriableException("All client connections to VoltDb have been lost.");
             }
 
@@ -222,27 +220,30 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
 
-        if(m_currentBatchCnt.get() == 0){
-            return;
+        if(m_connectionLost.get()){
+            throw new ConnectException("All client connections to VoltDb have been lost.");
         }
 
-        //wait for all the records to be persisted to VoltDB
-        int backoffCount = 0;
-        while(m_flushSet.size() > 0 && backoffCount < MAX_RETRY){
-            try {
-                Thread.sleep(100 * backoffCount);
-            } catch (InterruptedException e) {
-                LOGGER.warn("Interrupted sleep when flushig message offset.", e);
+        if(m_currentBatchCnt.get() > 0){
+
+            //wait for all the records to be persisted to VoltDB
+            int backoffCount = 0;
+            while(m_flushSet.size() > 0 && backoffCount < MAX_RETRY){
+                try {
+                    Thread.sleep(100 * backoffCount);
+                } catch (InterruptedException e) {
+                    LOGGER.warn("Interrupted sleep when flushig message offset.", e);
+                }
             }
-        }
-        if(m_flushSet.size() == 0){
-            LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
-            m_currentBatchCnt.set(0);
-        }else{
-            m_currentBatchCnt.set(0);
-            m_flushSet.clear();
-            //trigger the connect framework to re-put the batch records
-            throw new ConnectException("ConnectorTask flush: there are uncommited records.");
+            if(m_flushSet.size() == 0){
+                LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
+                m_currentBatchCnt.set(0);
+            }else{
+                m_currentBatchCnt.set(0);
+                m_flushSet.clear();
+                //trigger the connect framework to re-put the batch records
+                throw new ConnectException("ConnectorTask flush: there are uncommited records.");
+            }
         }
     }
 
@@ -317,7 +318,7 @@ public class ConnectorTask extends SinkTask {
     }
 
     /**
-     * Client status listener
+     * Client connection status listener
      *
      */
     private final  static class ClientStatusListener extends ClientStatusListenerExt{
@@ -331,13 +332,8 @@ public class ConnectorTask extends SinkTask {
 
         @Override
         public void connectionLost(String hostname, int port, int connectionsLeft, DisconnectCause cause){
-            LOGGER.info("A connection to the database has been lost. There are %d connections remaining.", connectionsLeft);
+            LOGGER.warn("A connection to the database has been lost. There are %d connections remaining.", connectionsLeft);
             m_connectionLost.set(connectionsLeft == 0);
-        }
-
-        @Override
-        public void backpressure(boolean status) {
-            LOGGER.info("Backpressure from the database is causing a delay in processing requests.");
         }
     }
 }
