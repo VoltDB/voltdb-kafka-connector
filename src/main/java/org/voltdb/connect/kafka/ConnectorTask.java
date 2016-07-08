@@ -107,6 +107,11 @@ public class ConnectorTask extends SinkTask {
      */
     private AtomicBoolean m_connectionLost = new AtomicBoolean(false);
 
+    /**
+     * <code>m_flushRetryMax</code> The maximal number of retry during the offset flush before kicking back to
+     * Kafka
+     */
+    private int m_flushRetryMax;
 
     /**
      * constructor
@@ -118,28 +123,28 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void start(Map<String, String> props) {
 
-        String username = ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_USER, "");
-        String password = ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_PASSWORD, "");
+        String username = getStringProperty(props, ConnectorConfig.CONNECTOR_USER, "");
+        String password = getStringProperty(props, ConnectorConfig.CONNECTOR_PASSWORD, "");
 
         ClientConfig config = new ClientConfig(username, password, new ClientStatusListener(m_connectionLost));
 
-        String autoReconnect = ConnectorConfig.getStringProperty(props, ConnectorConfig.AUTO_RECONNECTION, "true");
+        String autoReconnect = getStringProperty(props, ConnectorConfig.AUTO_RECONNECTION, "true");
         if("true".equalsIgnoreCase(autoReconnect)){
              config.setReconnectOnConnectionLoss(true);
         }
 
-        config.setConnectionResponseTimeout(ConnectorConfig.getIntProperty(props, ConnectorConfig.RESPONSE_TIMEOUT_MAX, 0));
-        config.setProcedureCallTimeout(ConnectorConfig.getIntProperty(props, ConnectorConfig.PROCEDURE_TIMEOUT_MAX, 0));
+        config.setConnectionResponseTimeout(getIntProperty(props, ConnectorConfig.RESPONSE_TIMEOUT_MAX, 0));
+        config.setProcedureCallTimeout(getIntProperty(props, ConnectorConfig.PROCEDURE_TIMEOUT_MAX, 0));
 
-        String kerberos = ConnectorConfig.getStringProperty(props, ConnectorConfig.KERBEROS_AUTHENTICATION, null);
+        String kerberos = getStringProperty(props, ConnectorConfig.KERBEROS_AUTHENTICATION, null);
         if( kerberos != null){
             config.enableKerberosAuthentication(kerberos);
         }
 
         m_client = ClientFactory.createClient(config);
 
-        m_procName = props.get(ConnectorConfig.CONNECTOR_STORE_PROC);
-        if(m_procName == null || m_procName.isEmpty()){
+        m_procName = getStringProperty(props, ConnectorConfig.CONNECTOR_STORE_PROC, null);
+        if(m_procName == null){
             throw new ConfigException("Missing store procesure.");
         }
 
@@ -153,11 +158,10 @@ public class ConnectorTask extends SinkTask {
             throw new ConfigException("Missing VoltDB hosts");
         }
 
-        String formatterClass = ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER,
-                                                                 "org.voltdb.connect.formatter.CSVFormatterFactory");
-        String formatterType =  ConnectorConfig.getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER_TYPE, "csv");
-        String converterClass = ConnectorConfig.getStringProperty(props, ConnectorConfig.RECORD_CONVERT_CLASS,
-                                                                 "org.voltdb.connect.converter.JsonDataConverter");
+        String formatterClass = getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER, "org.voltdb.connect.formatter.CSVFormatterFactory");
+        String formatterType =  getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER_TYPE, "csv");
+        String converterClass = getStringProperty(props, ConnectorConfig.RECORD_CONVERT_CLASS, "org.voltdb.connect.converter.JsonDataConverter");
+        m_flushRetryMax = getIntProperty(props, ConnectorConfig.FLUSH_RETRY_MAX, MAX_RETRY);
 
         Properties formatProperties = new Properties();
         formatProperties.putAll(props);
@@ -220,31 +224,33 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
 
+        if(m_currentBatchCnt.get() == 0){
+            return;
+        }
+
         if(m_connectionLost.get()){
-            throw new ConnectException("All client connections to VoltDb have been lost.");
+            throw new ConnectException("All client connections to VoltDB have been lost.");
         }
 
-        if(m_currentBatchCnt.get() > 0){
-
-            //wait for all the records to be persisted to VoltDB
-            int backoffCount = 0;
-            while(m_flushSet.size() > 0 && backoffCount < MAX_RETRY){
-                try {
-                    Thread.sleep(100 * backoffCount);
-                } catch (InterruptedException e) {
-                    LOGGER.warn("Interrupted sleep when flushig message offset.", e);
-                }
-            }
-            if(m_flushSet.size() == 0){
-                LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
-                m_currentBatchCnt.set(0);
-            }else{
-                m_currentBatchCnt.set(0);
-                m_flushSet.clear();
-                //trigger the connect framework to re-put the batch records
-                throw new ConnectException("ConnectorTask flush: there are uncommited records.");
+        //wait for all the records to be persisted to VoltDB
+        int backoffCount = 0;
+        while(m_flushSet.size() > 0 && backoffCount < m_flushRetryMax){
+            try {
+                Thread.sleep(100 * backoffCount++);
+            } catch (InterruptedException e) {
+                LOGGER.warn("Interrupted sleep when flushig message offset.", e);
             }
         }
+        if(m_flushSet.size() == 0){
+            LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
+            m_currentBatchCnt.set(0);
+        }else{
+            m_currentBatchCnt.set(0);
+            m_flushSet.clear();
+            //trigger the connect framework to re-put the batch records
+            throw new ConnectException("ConnectorTask flush: there are uncommited records.");
+        }
+
     }
 
     @Override
@@ -278,6 +284,37 @@ public class ConnectorTask extends SinkTask {
             }
         }
 
+    }
+
+    public static int getIntProperty(Map<String, String> props, String propName, int defaultValue){
+
+        String valString = props.get(propName);
+        if(valString != null){
+            valString = valString.trim();
+            if(!valString.isEmpty()){
+                try{
+                    int val = Integer.parseInt(valString);
+                    if (val >= 0){
+                        return val;
+                    }
+                } catch (NumberFormatException e){
+                    throw new ConfigException(String.format("Error for property %s:", propName, e.getMessage()));
+                }
+            }
+        }
+        return defaultValue;
+    }
+
+    public static String  getStringProperty(Map<String, String> props, String propName, String defaultValue){
+        String val = defaultValue;
+        String valString = props.get(propName);
+        if(valString != null){
+            valString= valString.trim();
+            if(!valString.isEmpty()){
+                val = valString;
+            }
+        }
+        return val;
     }
 
     /**

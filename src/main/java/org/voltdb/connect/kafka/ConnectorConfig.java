@@ -80,29 +80,4 @@ public class ConnectorConfig extends AbstractConfig {
         super(CONNFIG, props);
     }
 
-    public static int getIntProperty(Map<String, String> props, String propName, int defaultValue){
-        int val = defaultValue;
-        String valString = props.get(propName);
-        if(valString != null && !valString.trim().isEmpty()){
-            try{
-                val = Integer.parseInt(valString);
-            } catch (NumberFormatException e){
-                LOGGER.warn("Error for property %s", e, propName);
-            }
-        }
-
-        return val;
-    }
-
-    public static String  getStringProperty(Map<String, String> props, String propName, String defaultValue){
-        String val = defaultValue;
-        String valString = props.get(propName);
-        if(valString != null){
-            valString= valString.trim();
-            if(!valString.isEmpty()){
-                val = valString;
-            }
-        }
-        return val;
-    }
 }
