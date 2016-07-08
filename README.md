@@ -46,7 +46,7 @@ then import it into your eclipse workspace by using File->Import projects menu o
 * copy /config/voltdb-sink-connector.properties, voltdb-sink-connector.json to a folder and configure connector properties
 * configure connect-standalone.properties or connect-distributed.properties under path-to-kafka-root/config/
 
-#### Distributed Connect Properties
+#### Distributed Connect Properties (connect-distributed.properties)
 - **bootstrap.servers** (mandatory) Kafka servers the connector will connect to.
 - **group.id** (mandatory) The unique name for the cluster, used in forming the Connect cluster group.
 - **offset.storage.topic** (mandatory) The topic to store offset data for connectors in. 
@@ -65,7 +65,7 @@ then import it into your eclipse workspace by using File->Import projects menu o
 - **internal.value.converter.schemas.enable=false** Disable schema conversion.
 
 
-#### Standalone Connect Properties
+#### Standalone Connect Properties (connect-standalone.properties)
 - **bootstrap.servers** (mandatory) Kafka servers the connector will connect to.
 - **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
 - **offset.storage.file.filename** The file to store connector offsets.
@@ -79,7 +79,7 @@ then import it into your eclipse workspace by using File->Import projects menu o
 #### Connect Properties
 - **name** (default:KafkaSinkConnector) Unique name for the connector
 - **connector.class** (default:org.voltdb.connect.kafka.KafkaSinkConnector) The Java class for the connector
-- **voltdb.connection.user** The user name to connect VoltDb
+- **voltdb.connection.user** The user name to connect VoltDB
 - **voltdb.connection.password** The password to connect VoltDB
 - **voltdb.servers** (mandatory) A list of Voltdb server nodes with ',' as delimiter. example: server1:21212,server2:21212
 - **voltdb.procedure** (mandatory) The procedure name to be used to insert data to VoltDB.
@@ -95,7 +95,7 @@ then import it into your eclipse workspace by using File->Import projects menu o
 * Start VoltDB, create correct table and store procedure for the connector:
 
 ```sql
-  	add a table to VoltDB for testing:
+  	A sample table to VoltDB for testing:
     CREATE TABLE STOCK (
 		ID integer not null,
 		Symbol varchar(50),
@@ -105,44 +105,42 @@ then import it into your eclipse workspace by using File->Import projects menu o
 		constraint pk_stock PRIMARY KEY(ID)
    );
 ```
-* Start zookeeper:
-
+* Start zookeeper
 	```
   	$./bin/zookeeper-server-start.sh config/zookeeper.properties
   	```
-* Start Kafka server: 
+* Start Kafka server
 	```
    	$./bin/kafka-server-start.sh config/server.properties
    	```
-* Start the connector in standalone mode:
+* Start connector
 
     set **voltdb.procedure=stock.insert** for the connector.
+   ```
+	standalone mode:
     
-    ```
   	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar 	
   	
-  	$./bin/connect-standalone.sh  onfig/connect-standalone.properties  voltdb/voltdb-sink-connector.properties
+  	$./bin/connect-standalone.sh  config/connect-standalone.properties  voltdb/voltdb-sink-connector.properties
     ```
-* Start the connector in distributed mode:
-
-    set **voltdb.procedure=stock.insert** for the connector in voltdb-sink-connector.json
     
     ```
-  	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar 	 	
-  	$./bin/connect-distributed.sh  config/connect-distributed.properties
-    ```
-   
+    distributed mode:
+    
     Unlike standalone mode where connector configurations are passed in via the command line, interaction with a distributed-mode cluster is via the REST API. 
-    To create a connector, make a REST request to create a connector:
+ 
+  	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar 	 	
+  	
+  	$./bin/connect-distributed.sh  config/connect-distributed.properties
     
-     ```
-     To install KafkaSinkConnector:
+    Connector registration:
+    
     $curl -X POST -H "Content-Type: application/json" --data @voltdb/voltdb-sink-connector.json http://localhost:8083/connectors
     
-    To verify KafkaSinkConnector installation:
+    Connector verification:
     $curl -i -X GET "http://localhost:8083/connectors/KafkaSinkConnector"
     
-    To delete KafkaSinkConnector
+    Connector removal:
     $curl -i -X DELETE "http://localhost:8083/connectors/KafkaSinkConnector"
     
 	 ```
