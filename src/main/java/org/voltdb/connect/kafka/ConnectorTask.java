@@ -93,11 +93,6 @@ public class ConnectorTask extends SinkTask {
     private AtomicLong m_currentBatchCnt = new AtomicLong(0);
 
     /**
-     * <code>m_serverList</code> A list of VoltDb server nodes
-     */
-    private List<String> m_serverList ;
-
-    /**
      * <code>m_flushSet</code> Contains all the topic partitions and message offsets pushed from Kafka from last offset flush
      */
     private Set<String> m_flushSet = Sets.newConcurrentHashSet();
@@ -153,8 +148,8 @@ public class ConnectorTask extends SinkTask {
             throw new ConfigException("Missing VoltDB hosts.");
         }
 
-        m_serverList = Arrays.asList(servers.split(","));
-        if (m_serverList == null || m_serverList.isEmpty()) {
+        List<String> serverList = Arrays.asList(servers.split(","));
+        if (serverList == null || serverList.isEmpty()) {
             throw new ConfigException("Missing VoltDB hosts");
         }
 
@@ -178,7 +173,7 @@ public class ConnectorTask extends SinkTask {
             throw new ConnectException(e.getMessage());
         }
 
-        connect();
+        connect(serverList);
     }
 
     @Override
@@ -273,9 +268,9 @@ public class ConnectorTask extends SinkTask {
     /**
      * connect to VoltDB servers
      */
-    private void connect(){
+    private void connect( List<String> serverList){
 
-        for(String host : m_serverList){
+        for(String host : serverList){
             try {
                 m_client.createConnection(host.trim());
             } catch (IOException e) {
