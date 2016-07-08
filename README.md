@@ -2,41 +2,38 @@
 
 The connector is for moving data from Kafka to VoltDB.
 
-#### How to build artifacts and setup Eclipse
+#### Setup
 
 * Install Gradle
 
-On a Mac if you have [Homebrew](http://brew.sh/) setup then simply install the gradle bottle
+	On a Mac if you have [Homebrew](http://brew.sh/) setup then simply install the gradle bottle
 
-```bash
-brew install gradle
-```
+	```bash
+	brew install gradle
+	```
+	On Linux setup [SDK](http://sdkman.io/), and install gradle as follows
+	
+	```bash
+	sdk install gradle
+	```
+* Set the `voltdbhome` property in gradle.properties to the base directory where your VoltDB is installed
 
-On Linux setup [SDK](http://sdkman.io/), and install gradle as follows
+	```bash
+	echo voltdbhome=/voltdb/home/dirname > gradle.properties
+	```
 
-```bash
-sdk install gradle
-```
+* Compile artifacts
 
-* Create `gradle.properties` file and set the `voltdbhome` property
-   to the base directory where your VoltDB is installed
-
-```bash
-echo voltdbhome=/voltdb/home/dirname > gradle.properties
-```
-
-* Invoke gradle to compile artifacts
-
-```bash
-gradle shadowJar
-```
+	```bash
+	gradle shadowJar
+	```
 
 * To setup an eclipse project run gradle as follows
 
-```bash
-gradle cleanEclipse eclipse
-```
-then import it into your eclipse workspace by using File->Import projects menu option, and add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
+	```bash
+	gradle cleanEclipse eclipse
+	```
+	then import it into your eclipse workspace by using File->Import projects menu option, and add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
 
 ### Installing Connector 
 
@@ -106,10 +103,12 @@ then import it into your eclipse workspace by using File->Import projects menu o
    );
 ```
 * Start zookeeper
+
 	```
   	$./bin/zookeeper-server-start.sh config/zookeeper.properties
   	```
 * Start Kafka server
+
 	```
    	$./bin/kafka-server-start.sh config/server.properties
    	```
@@ -134,7 +133,6 @@ then import it into your eclipse workspace by using File->Import projects menu o
   	$./bin/connect-distributed.sh  config/connect-distributed.properties
     
     Connector registration:
-    
     $curl -X POST -H "Content-Type: application/json" --data @voltdb/voltdb-sink-connector.json http://localhost:8083/connectors
     
     Connector verification:
