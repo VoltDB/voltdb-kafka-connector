@@ -31,6 +31,7 @@ import java.util.Map;
 import org.apache.kafka.connect.connector.Connector;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.voltcore.logging.VoltLogger;
 import org.apache.kafka.common.config.ConfigDef;
 import org.apache.kafka.common.config.ConfigException;
 
@@ -38,8 +39,6 @@ import org.apache.kafka.common.config.ConfigException;
  * KafkaSinkConnector is a Kafka Connector implementation that moves data from Kafka to VoltDB.
  */
 public class KafkaSinkConnector extends Connector {
-
-    private static final ConnectorLogger LOGGER = new ConnectorLogger();
 
     private Map<String, String> m_configProperties;
 
@@ -51,7 +50,6 @@ public class KafkaSinkConnector extends Connector {
     @Override
     public void start(Map<String, String> props) throws ConnectException {
 
-        LOGGER.info("VoltDB Kafka sink sonnector start.....");
         try {
             m_configProperties = props;
             String connectorName = ConnectorTask.getStringProperty(props, ConnectorConfig.CONNECTOR_NAME, null);

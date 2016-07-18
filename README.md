@@ -16,7 +16,7 @@ The connector is for moving data from Kafka to VoltDB.
 	```bash
 	sdk install gradle
 	```
-* Set the `voltdbhome` property in gradle.properties to the base directory where your VoltDB is installed
+* Create `gradle.properties` file and set the `voltdbhome` property to the base directory where your VoltDB is installed
 
 	```bash
 	echo voltdbhome=/voltdb/home/dirname > gradle.properties
@@ -46,20 +46,22 @@ The connector is for moving data from Kafka to VoltDB.
 #### Distributed Connect Properties (connect-distributed.properties)
 - **bootstrap.servers** (mandatory) Kafka servers the connector will connect to.
 - **group.id** (mandatory) The unique name for the cluster, used in forming the Connect cluster group.
-- **offset.storage.topic** (mandatory) The topic to store offset data for connectors in. 
+- **offset.storage.topic** (mandatory) The topic used for offset data storage for connectors in will be created by Kafka. 
    This must be the same with the same group id.
-- **config.storage.topic** (mandatory) The topic to store connector and task configuration data in. 
+- **config.storage.topic** (mandatory) The topic used for teh storage of connector and task configuration data in will be created by Kafka.
    This must be the same with the same group id.
    Manually create the topic to ensure single partition if needed.
-- **status.storage.topic** (mandatory) Topic to use for storing statuses.
+- **status.storage.topic** (mandatory) Topic used for the storage of connector statuses will be created by Kafka.
 - **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
 - **topics** A list of topics to use as input for this connector.
 - **tasks.max** The maximum number of tasks that should be created for this connector.
-- **rest.port** (default: 8083) The port the REST interface listens on for HTTP requests.
+- **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests.
 - **key.converter.schemas.enable=false** Disable schema conversion.
 - **value.converter.schemas.enable=false** Disable schema conversion.
-- **internal.key.converter.schemas.enable=false** Disable schema conversion.
+- **internal.key.converter.schemas.enable=false** Disable schema conversion.  
+  Current release of VoltDB Kafka sink connector does not support schema
 - **internal.value.converter.schemas.enable=false** Disable schema conversion.
+  Current release of VoltDB Kafka sink connector does not support schema
 
 
 #### Standalone Connect Properties (connect-standalone.properties)
@@ -71,7 +73,9 @@ The connector is for moving data from Kafka to VoltDB.
 - **key.converter.schemas.enable=false** Disable schema conversion.
 - **value.converter.schemas.enable=false** Disable schema conversion.
 - **internal.key.converter.schemas.enable=false** Disable schema conversion.
+  Current release of VoltDB Kafka sink connector does not support schema
 - **internal.value.converter.schemas.enable=false** Disable schema conversion.
+  Current release of VoltDB Kafka sink connector does not support schema
 
 #### Connect Properties
 - **name** (default:KafkaSinkConnector) Unique name for the connector

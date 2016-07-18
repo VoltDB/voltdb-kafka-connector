@@ -31,8 +31,7 @@ import java.util.Map;
 
 import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
-import org.voltdb.connect.kafka.ConnectorLogger;
-
+import org.voltcore.logging.VoltLogger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -42,10 +41,10 @@ import com.google_voltpatches.common.base.Throwables;
  * Convert SinkRecord value pay load to string bytes.
  *
  */
-public class JsonDataConverter implements Converter{
+public class JsonDataConverter implements Converter {
 
-    private static final ConnectorLogger LOGGER = new ConnectorLogger();
-
+    private static final VoltLogger LOGGER = new VoltLogger("KafkaSinkConnector");
+    private static final String SCHEMAS_ENABLE = "schemas.enable";
     private final JsonConverter m_converter;
     private final ObjectMapper m_mapper;
     private final ObjectReader m_reader;
@@ -59,7 +58,7 @@ public class JsonDataConverter implements Converter{
         m_reader = m_mapper.reader();
 
         Map<String, String> props = new HashMap<String, String>();
-        props.put("schemas.enable", Boolean.FALSE.toString());
+        props.put(SCHEMAS_ENABLE, Boolean.FALSE.toString());
         m_converter.configure(props, false);
     }
 

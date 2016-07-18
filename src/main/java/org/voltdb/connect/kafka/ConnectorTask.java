@@ -42,6 +42,7 @@ import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
+import org.voltcore.logging.VoltLogger;
 import org.voltdb.client.Client;
 import org.voltdb.client.ClientConfig;
 import org.voltdb.client.ClientFactory;
@@ -64,8 +65,7 @@ import com.google_voltpatches.common.collect.Sets;
  */
 public class ConnectorTask extends SinkTask {
 
-    private static final ConnectorLogger LOGGER = new ConnectorLogger();
-    private static final int MAX_RETRY = 5;
+    private static final VoltLogger LOGGER = new VoltLogger("KafkaSinkConnector");
 
     /**
      * <code>m_formatter</code> The formatter to converting kafka data into the data format required by Volt procedure
@@ -102,15 +102,6 @@ public class ConnectorTask extends SinkTask {
      */
     private AtomicBoolean m_connectionLost = new AtomicBoolean(false);
 
-    /**
-     * <code>m_flushRetryMax</code> The maximal number of retry during the offset flush before kicking back to
-     * Kafka
-     */
-    private int m_flushRetryMax;
-
-    /**
-     * constructor
-     */
     public ConnectorTask() {
 
     }
@@ -136,8 +127,6 @@ public class ConnectorTask extends SinkTask {
             config.enableKerberosAuthentication(kerberos);
         }
 
-        m_client = ClientFactory.createClient(config);
-
         m_procName = getStringProperty(props, ConnectorConfig.CONNECTOR_STORE_PROC, null);
         if(m_procName == null){
             throw new ConfigException("Missing store procesure.");
@@ -156,7 +145,6 @@ public class ConnectorTask extends SinkTask {
         String formatterClass = getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER, "org.voltdb.connect.formatter.CSVFormatterFactory");
         String formatterType =  getStringProperty(props, ConnectorConfig.CONNECTOR_DATA_FORMATTER_TYPE, "csv");
         String converterClass = getStringProperty(props, ConnectorConfig.RECORD_CONVERT_CLASS, "org.voltdb.connect.converter.JsonDataConverter");
-        m_flushRetryMax = getIntProperty(props, ConnectorConfig.FLUSH_RETRY_MAX, MAX_RETRY);
 
         Properties formatProperties = new Properties();
         formatProperties.putAll(props);
@@ -169,10 +157,10 @@ public class ConnectorTask extends SinkTask {
             className = Class.forName(converterClass);
             m_converter = (Converter) className.newInstance();
         } catch (ClassNotFoundException  | InstantiationException | IllegalAccessException e) {
-            LOGGER.error("Can't create formatter or converter: %s", e.getMessage());
+            LOGGER.error(String.format("Can't create formatter or converter: %s", e.getMessage()));
             throw new ConnectException(e.getMessage());
         }
-
+        m_client = ClientFactory.createClient(config);
         connect(serverList);
     }
 
@@ -193,25 +181,28 @@ public class ConnectorTask extends SinkTask {
 
             String partitionOffset = Integer.toString(record.kafkaPartition()) + Long.toString(record.kafkaOffset());
             m_currentBatchCnt.getAndIncrement();
-            String data = null;
+
+            String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
+            Object[] formattedData = null;;
+            try{
+                formattedData = m_formatter.transform(data);
+            } catch (FormatException e) {
+                LOGGER.error(String.format("Error for offset: %s",data), e);
+                continue;
+            }
+
             try {
-                data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
                 ConnectorProcedureCallback cb = new ConnectorProcedureCallback(m_flushSet, partitionOffset);
-                if (!m_client.callProcedure(cb, m_procName, m_formatter.transform(data))) {
+                if (!m_client.callProcedure(cb, m_procName, formattedData)) {
                     if(m_flushSet.contains(partitionOffset)){
                         m_flushSet.remove(partitionOffset);
                     }
                 }
-            } catch (FormatException e) {
-                if(m_flushSet.contains(partitionOffset)){
-                    m_flushSet.remove(partitionOffset);
-                }
-                LOGGER.error("Error for offset: %s", e, data);
             } catch (Exception e){
                 if(m_flushSet.contains(partitionOffset)){
                     m_flushSet.remove(partitionOffset);
                 }
-                LOGGER.error("Procedure error for offset %s", e, partitionOffset);
+                LOGGER.error(String.format("Procedure error for offset %s", partitionOffset), e);
             }
         }
     }
@@ -227,17 +218,17 @@ public class ConnectorTask extends SinkTask {
             throw new ConnectException("All client connections to VoltDB have been lost.");
         }
 
-        //wait for all the records to be persisted to VoltDB
-        int backoffCount = 0;
-        while(m_flushSet.size() > 0 && backoffCount < m_flushRetryMax){
-            try {
-                Thread.sleep(100 * backoffCount++);
-            } catch (InterruptedException e) {
-                LOGGER.warn("Interrupted sleep when flushig message offset.", e);
-            }
+        try {
+            m_client.drain();
+        } catch (NoConnectionsException | InterruptedException e) {
+            LOGGER.error(e);
+            throw new ConnectException("ConnectorTask flush: there are uncommited records.");
         }
+
         if(m_flushSet.size() == 0){
-            LOGGER.info("Flush offset for batch count: %d", m_currentBatchCnt.get());
+            if(LOGGER.isInfoEnabled()){
+                LOGGER.info(String.format("Flush offset for batch count: %d", m_currentBatchCnt.get()));
+            }
             m_currentBatchCnt.set(0);
         }else{
             m_currentBatchCnt.set(0);
@@ -245,7 +236,6 @@ public class ConnectorTask extends SinkTask {
             //trigger the connect framework to re-put the batch records
             throw new ConnectException("ConnectorTask flush: there are uncommited records.");
         }
-
     }
 
     @Override
@@ -274,7 +264,7 @@ public class ConnectorTask extends SinkTask {
             try {
                 m_client.createConnection(host.trim());
             } catch (IOException e) {
-                LOGGER.error("Could not create connection to %s", e, host);
+                LOGGER.error(String.format("Could not create connection to %s", host), e);
                 Throwables.propagate(e);
             }
         }
@@ -343,7 +333,7 @@ public class ConnectorTask extends SinkTask {
         @Override
         public void clientCallback(ClientResponse response) throws Exception {
             if(response.getAppStatus() == ClientResponse.CONNECTION_LOST || response.getAppStatus()  == ClientResponse.CONNECTION_TIMEOUT){
-                LOGGER.warn("Client response error: %s", response.getAppStatusString());
+                LOGGER.warn(String.format("Client response error: %s", response.getAppStatusString()));
             }
             m_flushSet.remove(m_offset);
         }
@@ -364,7 +354,7 @@ public class ConnectorTask extends SinkTask {
 
         @Override
         public void connectionLost(String hostname, int port, int connectionsLeft, DisconnectCause cause){
-            LOGGER.warn("A connection to the database has been lost. There are %d connections remaining.", connectionsLeft);
+            LOGGER.warn(String.format("A connection to the database has been lost. There are %d connections remaining.", connectionsLeft));
             m_connectionLost.set(connectionsLeft == 0);
         }
     }
