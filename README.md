@@ -60,13 +60,13 @@ The connector is for moving data from Kafka to VoltDB.
 - **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
 - **topics** A list of topics to use as input for this connector.
 - **tasks.max** The maximum number of tasks that should be created for this connector.
-- **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests.
+- **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests
 
-##Current release of VoltDB Kafka sink connector does not support schema.Set the following properties to false
-- **key.converter.schemas.enable=false** Disable schema conversion.
-- **value.converter.schemas.enable=false** Disable schema conversion.
-- **internal.key.converter.schemas.enable=false** Disable schema conversion.  
-- **internal.value.converter.schemas.enable=false** Disable schema conversion.
+  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false
+- **key.converter.schemas.enable=false** 
+- **value.converter.schemas.enable=false** 
+- **internal.key.converter.schemas.enable=false** 
+- **internal.value.converter.schemas.enable=false** 
 
 
 #### Standalone Connect Properties (connect-standalone.properties)
@@ -76,13 +76,13 @@ The connector is for moving data from Kafka to VoltDB.
 - **tasks.max** The maximum number of tasks that should be created for this connector
 - **rest.port** (default: 8083) The port the REST interface listens on for HTTP requests.
 
-##Current release of VoltDB Kafka sink connector does not support schema.Set the following properties to false
-- **key.converter.schemas.enable=false** Disable schema conversion.
-- **value.converter.schemas.enable=false** Disable schema conversion.
-- **internal.key.converter.schemas.enable=false** Disable schema conversion.
-- **internal.value.converter.schemas.enable=false** Disable schema conversion.
+  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false
+- **key.converter.schemas.enable=false** 
+- **value.converter.schemas.enable=false** 
+- **internal.key.converter.schemas.enable=false** 
+- **internal.value.converter.schemas.enable=false** 
 
-#### Connect Properties
+#### Connect Properties (voltdb-sink-connector.properties)
 - **name** (default:KafkaSinkConnector) Unique name for the connector
 - **connector.class** (default:org.voltdb.connect.kafka.KafkaSinkConnector) The Java class for the connector
 - **voltdb.connection.user** The user name to connect VoltDB
@@ -95,9 +95,9 @@ The connector is for moving data from Kafka to VoltDB.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
 - **kerberos.authentication** The authentication module if enabled.
 
-#### Connect JSON Properties 
+#### Connect JSON Properties (voltdb-sink-connector.json)
 
-The json file contains the same properties as Connect Properties in above section. Example:
+The json file contains the same properties as voltdb-sink-connector.properties. Example:
 ```
 	{
    		"name":"KafkaSinkConnector",
