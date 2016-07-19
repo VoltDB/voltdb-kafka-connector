@@ -35,7 +35,7 @@ The connector is for moving data from Kafka to VoltDB.
 	```
 	then import it into your eclipse workspace by using File->Import projects menu option, and add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
 
-### Installing Connector 
+#### Installing Connector 
 
 * All the scripts for running Kafka Connect will use the CLASSPATH environment variable if it is set when they are invoked.
 * Copy the built jar from `build/libs` to a directory  where Kafka server is installed or accessible. 
@@ -62,11 +62,9 @@ The connector is for moving data from Kafka to VoltDB.
 - **tasks.max** The maximum number of tasks that should be created for this connector.
 - **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests
 
-  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false
-- **key.converter.schemas.enable=false** 
-- **value.converter.schemas.enable=false** 
-- **internal.key.converter.schemas.enable=false** 
-- **internal.value.converter.schemas.enable=false** 
+  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
+  *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
+  *internal.value.converter.schemas.enable*.
 
 
 #### Standalone Connect Properties (connect-standalone.properties)
@@ -76,11 +74,10 @@ The connector is for moving data from Kafka to VoltDB.
 - **tasks.max** The maximum number of tasks that should be created for this connector
 - **rest.port** (default: 8083) The port the REST interface listens on for HTTP requests.
 
-  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false
-- **key.converter.schemas.enable=false** 
-- **value.converter.schemas.enable=false** 
-- **internal.key.converter.schemas.enable=false** 
-- **internal.value.converter.schemas.enable=false** 
+  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
+  *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
+  *internal.value.converter.schemas.enable*.
+
 
 #### Connect Properties (voltdb-sink-connector.properties)
 - **name** (default:KafkaSinkConnector) Unique name for the connector

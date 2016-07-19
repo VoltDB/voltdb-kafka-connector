@@ -68,7 +68,7 @@ public class ConnectorTask extends SinkTask {
     private static final VoltLogger LOGGER = new VoltLogger("KafkaSinkConnector");
 
     /**
-     * <code>m_formatter</code> The formatter to converting kafka data into the data format required by Volt procedure
+     * <code>m_formatter</code> The formatter to converting kafka data into the data format required by VoltDB procedure
      */
     private Formatter<String> m_formatter;
 
@@ -78,22 +78,23 @@ public class ConnectorTask extends SinkTask {
     private Converter m_converter;
 
     /**
-     * <code>m_client</code> Volt client
+     * <code>m_client</code> VoltDB client
      */
     private Client m_client;
 
     /**
-     * <code>m_procName</code> Volt store procedure name
+     * <code>m_procName</code> VoltDB store procedure name
      */
     private String m_procName;
 
     /**
-     * <code>m_currentBatchCnt</code>The record count pushed from Kafka from last offset flush
+     * <code>m_currentBatchCnt</code> The record count pushed from Kafka from last offset flush
      */
     private AtomicLong m_currentBatchCnt = new AtomicLong(0);
 
     /**
-     * <code>m_flushSet</code> Contains all the topic partitions and message offsets pushed from Kafka from last offset flush
+     * <code>m_flushSet</code> The temporary storage of the topic partitions and message offsets. Entries are removed when
+     * the data from Kafaka are processed. The set must be empty when the offset is allowed to committed.
      */
     private Set<String> m_flushSet = Sets.newConcurrentHashSet();
 
@@ -167,14 +168,11 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void put(Collection<SinkRecord> records) {
 
-        if (records.isEmpty()) {
-            return;
-        }
-
         for (SinkRecord record : records) {
 
             if(m_connectionLost.get()){
-
+                m_currentBatchCnt.set(0);
+                m_flushSet.clear();
                 //trigger Kafka consumer to pause and retry.
                 throw new RetriableException("All client connections to VoltDb have been lost.");
             }
@@ -183,7 +181,7 @@ public class ConnectorTask extends SinkTask {
             m_currentBatchCnt.getAndIncrement();
 
             String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
-            Object[] formattedData = null;;
+            Object[] formattedData = null;
             try{
                 formattedData = m_formatter.transform(data);
             } catch (FormatException e) {
@@ -194,14 +192,10 @@ public class ConnectorTask extends SinkTask {
             try {
                 ConnectorProcedureCallback cb = new ConnectorProcedureCallback(m_flushSet, partitionOffset);
                 if (!m_client.callProcedure(cb, m_procName, formattedData)) {
-                    if(m_flushSet.contains(partitionOffset)){
-                        m_flushSet.remove(partitionOffset);
-                    }
-                }
-            } catch (Exception e){
-                if(m_flushSet.contains(partitionOffset)){
                     m_flushSet.remove(partitionOffset);
                 }
+            } catch (Exception e){
+                m_flushSet.remove(partitionOffset);
                 LOGGER.error(String.format("Procedure error for offset %s", partitionOffset), e);
             }
         }
@@ -210,31 +204,22 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
 
-        if(m_currentBatchCnt.get() == 0){
-            return;
-        }
-
-        if(m_connectionLost.get()){
-            throw new ConnectException("All client connections to VoltDB have been lost.");
-        }
-
-        try {
-            m_client.drain();
-        } catch (NoConnectionsException | InterruptedException e) {
-            LOGGER.error(e);
-            throw new ConnectException("ConnectorTask flush: there are uncommited records.");
-        }
-
-        if(m_flushSet.size() == 0){
-            if(LOGGER.isInfoEnabled()){
-                LOGGER.info(String.format("Flush offset for batch count: %d", m_currentBatchCnt.get()));
+        if(m_currentBatchCnt.get() > 0){
+            try {
+                m_client.drain();
+                if(LOGGER.isInfoEnabled()){
+                    LOGGER.info(String.format("Flush offset for batch count: %d", m_currentBatchCnt.get()));
+                }
+            } catch (NoConnectionsException | InterruptedException e) {
+                LOGGER.error(e);
+                throw new ConnectException("ConnectorTask flush: there are uncommited records.");
+            } finally{
+                m_currentBatchCnt.set(0);
+                if(!m_flushSet.isEmpty()){
+                    m_flushSet.clear();
+                    throw new ConnectException("ConnectorTask flush: there are uncommited records.");
+                }
             }
-            m_currentBatchCnt.set(0);
-        }else{
-            m_currentBatchCnt.set(0);
-            m_flushSet.clear();
-            //trigger the connect framework to re-put the batch records
-            throw new ConnectException("ConnectorTask flush: there are uncommited records.");
         }
     }
 
@@ -274,32 +259,21 @@ public class ConnectorTask extends SinkTask {
     public static int getIntProperty(Map<String, String> props, String propName, int defaultValue){
 
         String valString = props.get(propName);
-        if(valString != null){
-            valString = valString.trim();
-            if(!valString.isEmpty()){
-                try{
-                    int val = Integer.parseInt(valString);
-                    if (val >= 0){
-                        return val;
-                    }
-                } catch (NumberFormatException e){
-                    throw new ConfigException(String.format("Error for property %s:", propName, e.getMessage()));
-                }
-            }
+        valString = (valString == null) ? "" : valString.trim();
+        try{
+            return (valString.isEmpty() ?  defaultValue : Integer.parseInt(valString));
+        } catch (NumberFormatException e){
+            throw new ConfigException(String.format("Error: %s for property %s.", e.getMessage(), propName));
         }
-        return defaultValue;
+
     }
 
     public static String  getStringProperty(Map<String, String> props, String propName, String defaultValue){
-        String val = defaultValue;
+
         String valString = props.get(propName);
-        if(valString != null){
-            valString= valString.trim();
-            if(!valString.isEmpty()){
-                val = valString;
-            }
-        }
-        return val;
+        valString = (valString == null) ? "" : valString.trim();
+        return (valString.isEmpty() ? defaultValue : valString);
+
     }
 
     /**
