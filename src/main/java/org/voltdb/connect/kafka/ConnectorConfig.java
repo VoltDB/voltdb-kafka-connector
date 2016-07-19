@@ -38,7 +38,7 @@ import org.apache.kafka.common.config.ConfigDef.Type;
 public class ConnectorConfig extends AbstractConfig {
 
     /**
-     * <code>CONNECTOR_VERSION</code>  The connector version
+     * <code>CONNECTOR_VERSION</code> The connector version
      */
     public static final String CONNECTOR_VERSION = "KafkaConnect-1.0.0";
 

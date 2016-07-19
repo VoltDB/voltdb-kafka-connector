@@ -54,19 +54,19 @@ The connector is for moving data from Kafka to VoltDB.
 - **config.storage.topic** (mandatory) The Kafka topic to store connector and task configuration state in. 
   Although this topic can be auto-created if your cluster has auto topic creation enabled, 
   it is highly recommended that you create it before starting the Kafka Connect cluster. 
-  This topic should always have a single partition and be highly replicated
+  This topic should always have a single partition and be highly replicated.
   This must be the same for with the same group.id
 - **status.storage.topic** (mandatory) Topic used for the storage of connector statuses will be created by Kafka.
 - **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
 - **topics** A list of topics to use as input for this connector.
 - **tasks.max** The maximum number of tasks that should be created for this connector.
 - **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests.
+
+##Current release of VoltDB Kafka sink connector does not support schema.Set the following properties to false
 - **key.converter.schemas.enable=false** Disable schema conversion.
 - **value.converter.schemas.enable=false** Disable schema conversion.
 - **internal.key.converter.schemas.enable=false** Disable schema conversion.  
-  Current release of VoltDB Kafka sink connector does not support schema
 - **internal.value.converter.schemas.enable=false** Disable schema conversion.
-  Current release of VoltDB Kafka sink connector does not support schema
 
 
 #### Standalone Connect Properties (connect-standalone.properties)
@@ -75,12 +75,12 @@ The connector is for moving data from Kafka to VoltDB.
 - **offset.storage.file.filename** The file to store connector offsets.
 - **tasks.max** The maximum number of tasks that should be created for this connector
 - **rest.port** (default: 8083) The port the REST interface listens on for HTTP requests.
+
+##Current release of VoltDB Kafka sink connector does not support schema.Set the following properties to false
 - **key.converter.schemas.enable=false** Disable schema conversion.
 - **value.converter.schemas.enable=false** Disable schema conversion.
 - **internal.key.converter.schemas.enable=false** Disable schema conversion.
-  Current release of VoltDB Kafka sink connector does not support schema
 - **internal.value.converter.schemas.enable=false** Disable schema conversion.
-  Current release of VoltDB Kafka sink connector does not support schema
 
 #### Connect Properties
 - **name** (default:KafkaSinkConnector) Unique name for the connector
@@ -94,6 +94,28 @@ The connector is for moving data from Kafka to VoltDB.
 - **formatter.type** The type of formatter, such as csv, tsv.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
 - **kerberos.authentication** The authentication module if enabled.
+
+#### Connect JSON Properties 
+
+The json file contains the same properties as Connect Properties in above section. Example:
+```
+	{
+   		"name":"KafkaSinkConnector",
+   		"config":{
+      		"connector.class":"org.voltdb.connect.kafka.KafkaSinkConnector",
+      		"tasks.max":"1",
+      		"voltdb.servers":"localhost:21212",
+      		"voltdb.procedure":"TestTable.insert",
+      		"formatter.factory.class":"org.voltdb.connect.formatter.CSVFormatterFactory",
+      		"voltdb.connection.user":"",
+      		"voltdb.connection.password":"",
+      		"formatter.type":"csv",
+      		"data.converter.class":"org.voltdb.connect.converter.JsonDataConverter",
+      		"topics":"testTopic",
+      		"kerberos.authentication":"false"
+   		}
+	}
+```
 
 #### Instructions for running
 
