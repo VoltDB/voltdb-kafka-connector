@@ -50,12 +50,12 @@ The connector is for moving data from Kafka to VoltDB.
   Although this topic can be auto-created if your cluster has auto topic creation enabled, 
   it is highly recommended that you create it before starting the Kafka Connect cluster. 
   To support large Kafka Connect clusters, this topic should have a large number of partitions and highly replicated.
-  This must be the same for all workers with the same group.id
+  This must be the same with the same group.id
 - **config.storage.topic** (mandatory) The Kafka topic to store connector and task configuration state in. 
   Although this topic can be auto-created if your cluster has auto topic creation enabled, 
   it is highly recommended that you create it before starting the Kafka Connect cluster. 
   This topic should always have a single partition and be highly replicated
-  This must be the same for all workers with the same group.id
+  This must be the same for with the same group.id
 - **status.storage.topic** (mandatory) Topic used for the storage of connector statuses will be created by Kafka.
 - **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
 - **topics** A list of topics to use as input for this connector.
