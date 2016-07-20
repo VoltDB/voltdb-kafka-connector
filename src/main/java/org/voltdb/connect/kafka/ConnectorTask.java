@@ -159,7 +159,7 @@ public class ConnectorTask extends SinkTask {
             className = Class.forName(converterClass);
             m_converter = (Converter) className.newInstance();
         } catch (ClassNotFoundException  | InstantiationException | IllegalAccessException e) {
-            LOGGER.error(String.format("Can't create formatter or converter: %s", e.getMessage()));
+            LOGGER.error(String.format("Can't create formatter or converter: %s", e.getMessage()), e);
             throw new ConnectException(e.getMessage());
         }
         m_client = ClientFactory.createClient(config);
