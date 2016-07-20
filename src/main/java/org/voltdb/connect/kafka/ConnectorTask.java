@@ -26,7 +26,6 @@ package org.voltdb.connect.kafka;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +54,7 @@ import org.voltdb.connect.formatter.AbstractFormatterFactory;
 import org.voltdb.importer.formatter.FormatException;
 import org.voltdb.importer.formatter.Formatter;
 
+import com.google_voltpatches.common.base.Splitter;
 import com.google_voltpatches.common.base.Throwables;
 import com.google_voltpatches.common.collect.Sets;
 
@@ -96,7 +96,7 @@ public class ConnectorTask extends SinkTask {
      * <code>m_flushSet</code> The temporary storage of the topic partitions and message offsets. Entries are removed when
      * the data from Kafaka are processed. The set must be empty when the offset is allowed to committed.
      */
-    private Set<String> m_flushSet = Sets.newConcurrentHashSet();
+    private Set<KafkaPartitionOffset> m_flushSet = Sets.newConcurrentHashSet();
 
     /**
      * <code>m_serverConnected</code> A flag indicates if the VoltDb client is connected to servers.
@@ -138,7 +138,8 @@ public class ConnectorTask extends SinkTask {
             throw new ConfigException("Missing VoltDB hosts.");
         }
 
-        List<String> serverList = Arrays.asList(servers.split(","));
+        Splitter splitter = Splitter.on(',').omitEmptyStrings().trimResults();
+        List<String> serverList = splitter.splitToList(servers);
         if (serverList == null || serverList.isEmpty()) {
             throw new ConfigException("Missing VoltDB hosts");
         }
@@ -174,10 +175,10 @@ public class ConnectorTask extends SinkTask {
                 m_currentBatchCnt.set(0);
                 m_flushSet.clear();
                 //trigger Kafka consumer to pause and retry.
-                throw new RetriableException("All client connections to VoltDb have been lost.");
+                throw new RetriableException("All client connections to VoltDB have been lost.");
             }
 
-            String partitionOffset = Integer.toString(record.kafkaPartition()) + Long.toString(record.kafkaOffset());
+            KafkaPartitionOffset partitionOffset = new KafkaPartitionOffset(record.kafkaPartition(), record.kafkaOffset());
             m_currentBatchCnt.getAndIncrement();
 
             String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
@@ -194,6 +195,11 @@ public class ConnectorTask extends SinkTask {
                 if (!m_client.callProcedure(cb, m_procName, formattedData)) {
                     m_flushSet.remove(partitionOffset);
                 }
+            } catch (NoConnectionsException e){
+                m_currentBatchCnt.set(0);
+                m_flushSet.clear();
+                LOGGER.error(String.format("Procedure error for offset %s", partitionOffset), e);
+                throw new RetriableException("Connection to VoltDB has been lost.");
             } catch (Exception e){
                 m_flushSet.remove(partitionOffset);
                 LOGGER.error(String.format("Procedure error for offset %s", partitionOffset), e);
@@ -217,6 +223,8 @@ public class ConnectorTask extends SinkTask {
                 m_currentBatchCnt.set(0);
                 if(!m_flushSet.isEmpty()){
                     m_flushSet.clear();
+
+                    //there are still records unaccounted for, let framework to re-put these records.
                     throw new ConnectException("ConnectorTask flush: there are uncommited records.");
                 }
             }
@@ -285,19 +293,19 @@ public class ConnectorTask extends SinkTask {
         /**
          * <code>m_flushSet</code>  a set of partition-message offset
          */
-        private final Set<String> m_flushSet;
+        private final Set<KafkaPartitionOffset> m_flushSet;
 
         /**
          * <code>m_offset</code>  partition-message offset
          */
-        private final String m_offset;
+        private final KafkaPartitionOffset m_offset;
 
         /**
          * constructor
          * @param flushSet The set of partition-message offset
          * @param offset partition-message offset
          */
-        public ConnectorProcedureCallback(Set<String> flushSet, String offset) {
+        public ConnectorProcedureCallback(Set<KafkaPartitionOffset> flushSet, KafkaPartitionOffset offset) {
             super();
             m_flushSet = flushSet;
             m_offset = offset;
@@ -330,6 +338,30 @@ public class ConnectorTask extends SinkTask {
         public void connectionLost(String hostname, int port, int connectionsLeft, DisconnectCause cause){
             LOGGER.warn(String.format("A connection to the database has been lost. There are %d connections remaining.", connectionsLeft));
             m_connectionLost.set(connectionsLeft == 0);
+        }
+    }
+
+    /**
+     * A container for Kafka partition id and offset
+     *
+     */
+    private final static class KafkaPartitionOffset{
+
+        final int m_partition;
+        final long m_offset;
+
+        public KafkaPartitionOffset(int partition, long offset){
+            m_partition = partition;
+            m_offset = offset;
+        }
+
+        @Override
+        public boolean equals (Object obj){
+            if(obj instanceof KafkaPartitionOffset){
+                return (m_partition == ((KafkaPartitionOffset)obj).m_partition && m_offset == ((KafkaPartitionOffset)obj).m_offset);
+            }
+
+            return false;
         }
     }
 }
