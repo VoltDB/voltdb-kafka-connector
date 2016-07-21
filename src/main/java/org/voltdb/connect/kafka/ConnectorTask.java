@@ -189,7 +189,6 @@ public class ConnectorTask extends SinkTask {
                 LOGGER.error(String.format("Error for offset: %s",data), e);
                 continue;
             }
-
             try {
                 ConnectorProcedureCallback cb = new ConnectorProcedureCallback(m_flushSet, partitionOffset);
                 if (!m_client.callProcedure(cb, m_procName, formattedData)) {
@@ -255,7 +254,7 @@ public class ConnectorTask extends SinkTask {
 
         for(String host : serverList){
             try {
-                m_client.createConnection(host.trim());
+                m_client.createConnection(host);
             } catch (IOException e) {
                 LOGGER.error(String.format("Could not create connection to %s", host), e);
                 Throwables.propagate(e);
