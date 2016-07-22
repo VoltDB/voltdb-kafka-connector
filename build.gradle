@@ -42,13 +42,13 @@ configurations {
     connect
 }
 
-def volt = fileTree(dir: "${voltdbhome}/voltdb", include: 'voltdbclient*.jar')
-def bundle = fileTree(dir: "${voltdbhome}/bundles", include: 'voltcsvformatter.jar')
+def volt = fileTree(dir: "${voltdbhome}/voltdb", include: "voltdbclient-${dbversion}.jar")
+def formatter = fileTree(dir: "${buildDir}/distributions", include: "${archivesBaseName}-${version}.zip")
+
 
 dependencies {
     voltlib volt
-    voltlib bundle
-
+    voltlib formatter
     connect ('org.apache.kafka:connect-api:0.10.0.0') { transitive = false }
     connect ('org.apache.kafka:kafka-clients:0.10.0.0') { transitive = false }
     connect ('org.apache.kafka:connect-json:0.10.0.0') { transitive = false }
@@ -64,4 +64,17 @@ dependencies {
 shadowJar {
     mergeServiceFiles()
     configurations = [project.configurations.voltlib]
+}
+
+task prepare(type: Copy) {
+    def zipFile = file("${voltdbhome}/voltdb/voltdb-${dbversion}.jar")
+    def outputDir = file("${buildDir}/unpacked/")
+
+    from zipTree(zipFile)
+    into outputDir
+}
+
+task zip(type: Zip) {
+    from "${buildDir}/unpacked/"
+    include 'org/voltdb/importer/formatter/**'
 }

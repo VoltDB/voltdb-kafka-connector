@@ -16,22 +16,24 @@ The connector is for moving data from Kafka to VoltDB.
 	```bash
 	sdk install gradle
 	```
-* Create `gradle.properties` file and set the `voltdbhome` property to the base directory where your VoltDB is installed
+* Create `gradle.properties` file
 
 	```bash
 	echo voltdbhome=/voltdb/home/dirname > gradle.properties
+    set the `voltdbhome` property to the base directory where your VoltDB is installed
+    set the `dbversion` property to the VoltDB build version
 	```
 
 * Compile artifacts
 
 	```bash
-	gradle shadowJar
+    gradle prepare zip shadowJar
 	```
 
 * To setup an eclipse project run gradle as follows
 
 	```bash
-	gradle cleanEclipse eclipse
+    gradle cleanEclipse eclipse
 	```
 	then import it into your eclipse workspace by using File->Import projects menu option, and add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to classpath.
 
