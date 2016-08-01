@@ -77,4 +77,5 @@ task prepare(type: Copy) {
 task zip(type: Zip) {
     from "${buildDir}/unpacked/"
     include 'org/voltdb/importer/formatter/**'
+    include 'au/com/bytecode/opencsv_voltpatches/**'
 }
