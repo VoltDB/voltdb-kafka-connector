@@ -177,7 +177,10 @@ public class ConnectorTask extends SinkTask {
                 //trigger Kafka consumer to pause and retry.
                 throw new RetriableException("All client connections to VoltDB have been lost.");
             }
-
+            if(record.value() == null){
+                LOGGER.error("The SinkRecord does not have a value.");
+                continue;
+            }
             KafkaPartitionOffset partitionOffset = new KafkaPartitionOffset(record.kafkaPartition(), record.kafkaOffset());
             m_currentBatchCnt.getAndIncrement();
 

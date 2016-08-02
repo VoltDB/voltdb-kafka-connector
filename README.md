@@ -63,6 +63,10 @@ The connector is for moving data from Kafka to VoltDB.
 - **topics** A list of topics to use as input for this connector.
 - **tasks.max** The maximum number of tasks that should be created for this connector.
 - **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests
+- **key.converter**=org.voltdb.connect.json.JsonTransformer
+- **value.converter**=org.voltdb.connect.json.JsonTransformer
+- **internal.key.converter**=org.voltdb.connect.json.JsonTransformer
+- **internal.value.converter**=org.voltdb.connect.json.JsonTransformer
 
   Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
   *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
@@ -75,6 +79,10 @@ The connector is for moving data from Kafka to VoltDB.
 - **offset.storage.file.filename** The file to store connector offsets.
 - **tasks.max** The maximum number of tasks that should be created for this connector
 - **rest.port** (default: 8083) The port the REST interface listens on for HTTP requests.
+- **key.converter**=org.voltdb.connect.json.JsonTransformer
+- **value.converter**=org.voltdb.connect.json.JsonTransformer
+- **internal.key.converter**=org.voltdb.connect.json.JsonTransformer
+- **internal.value.converter**=org.voltdb.connect.json.JsonTransformer
 
   Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
   *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
@@ -142,6 +150,11 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
 	```
    	$./bin/kafka-server-start.sh config/server.properties
    	```
+* create Kafka topic for the connector
+
+    ```
+   $./bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic connect-test
+    ```
 * Start connector
 
     set **voltdb.procedure=stock.insert** for the connector.
