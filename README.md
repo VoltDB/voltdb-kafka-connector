@@ -67,6 +67,7 @@ The connector is for moving data from Kafka to VoltDB.
 - **value.converter**=org.voltdb.connect.json.JsonTransformer
 - **internal.key.converter**=org.voltdb.connect.json.JsonTransformer
 - **internal.value.converter**=org.voltdb.connect.json.JsonTransformer
+
   Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
   *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
   *internal.value.converter.schemas.enable*.
