@@ -39,21 +39,27 @@ import org.voltcore.logging.VoltLogger;
 public class JsonTransformer extends JsonConverter {
 
     private static final VoltLogger LOGGER = new VoltLogger("KafkaSinkConnector");
+
+    /**
+     * <code>NULL_VALUE</code> The default schema value for data in invalid formats
+     */
     private static final SchemaAndValue NULL_VALUE = new SchemaAndValue(null, null);
+
     @Override
     public SchemaAndValue toConnectData(String topic, byte[] value) {
 
-        if(value == null || value.length== 0){
+        if (value == null || value.length == 0) {
             return NULL_VALUE;
         }
 
-        try{
+        try {
+            //convert plain string to double quoted.
             String val = new String(value, StandardCharsets.UTF_8);
             if(!val.startsWith("\"")){
                 val = "\"" + val + "\"";
             }
             return super.toConnectData(topic, val.getBytes());
-        } catch (DataException e){
+        } catch (DataException e) {
             LOGGER.error("Data conversion error", e);
             return NULL_VALUE;
         }

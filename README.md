@@ -149,6 +149,11 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
 	```
    	$./bin/kafka-server-start.sh config/server.properties
    	```
+* create Kafka topic for the connector
+
+    ```
+   $./bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic connect-test
+    ```
 * Start connector
 
     set **voltdb.procedure=stock.insert** for the connector.
