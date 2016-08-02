@@ -32,32 +32,30 @@ import org.apache.kafka.connect.json.JsonConverter;
 import org.voltcore.logging.VoltLogger;
 
 /**
- *Convert a native object to a Kafka Connect data object. If the connect data are not in
- *the valid format, send back null.
+ *Convert a native object to a Kafka Connect data object. If the native object is a plain string,
+ *convert to it to double quoted string as json. DataException will be consumed to avoid connect shutdown
  *
  */
 public class JsonTransformer extends JsonConverter {
 
     private static final VoltLogger LOGGER = new VoltLogger("KafkaSinkConnector");
-
+    private static final SchemaAndValue NULL_VALUE = new SchemaAndValue(null, null);
     @Override
     public SchemaAndValue toConnectData(String topic, byte[] value) {
 
         if(value == null || value.length== 0){
-            return new SchemaAndValue(null, null);
+            return NULL_VALUE;
         }
 
         try{
             String val = new String(value, StandardCharsets.UTF_8);
             if(!val.startsWith("\"")){
                 val = "\"" + val + "\"";
-                return super.toConnectData(topic, val.getBytes());
-            }else{
-                return super.toConnectData(topic, value);
             }
+            return super.toConnectData(topic, val.getBytes());
         } catch (DataException e){
             LOGGER.error("Data conversion error", e);
-            return new SchemaAndValue(null, null);
+            return NULL_VALUE;
         }
     }
 }
