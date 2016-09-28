@@ -28,11 +28,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.kafka.common.config.ConfigDef;
+import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.connector.Connector;
 import org.apache.kafka.connect.connector.Task;
 import org.apache.kafka.connect.errors.ConnectException;
-import org.apache.kafka.common.config.ConfigDef;
-import org.apache.kafka.common.config.ConfigException;
 
 /**
  * KafkaSinkConnector is a Kafka Connector implementation that moves data from Kafka to VoltDB.
@@ -52,6 +53,7 @@ public class KafkaSinkConnector extends Connector {
         try {
             m_configProperties = props;
             String connectorName = ConnectorTask.getStringProperty(props, ConnectorConfig.CONNECTOR_NAME, null);
+            //todo: check if it can be done by providing default values itself
             if(connectorName == null){
                 m_configProperties.put(ConnectorConfig.CONNECTOR_NAME,"KafkaSinkConnector");
             }

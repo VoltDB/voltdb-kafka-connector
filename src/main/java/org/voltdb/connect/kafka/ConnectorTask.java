@@ -25,7 +25,9 @@
 package org.voltdb.connect.kafka;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
@@ -177,20 +181,32 @@ public class ConnectorTask extends SinkTask {
                 //trigger Kafka consumer to pause and retry.
                 throw new RetriableException("All client connections to VoltDB have been lost.");
             }
-            if(record.value() == null){
-                LOGGER.error("The SinkRecord does not have a value.");
+
+            if ((record.value() == null) && (record.valueSchema() == null)){
+                LOGGER.error("The SinkRecord does not have schema or value defined.");
                 continue;
             }
+
             KafkaPartitionOffset partitionOffset = new KafkaPartitionOffset(record.kafkaPartition(), record.kafkaOffset());
             m_currentBatchCnt.getAndIncrement();
 
-            String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
             Object[] formattedData = null;
-            try{
-                formattedData = m_formatter.transform(data);
-            } catch (FormatException e) {
-                LOGGER.error(String.format("Error for offset: %s",data), e);
-                continue;
+            if(record.valueSchema() != null) {
+                try {
+                    formattedData = getDataFromSchemaRecord(record);
+                } catch (ConnectException e) {
+                    LOGGER.error("Failed processing schema records: ", e);
+                    continue;
+                }
+            }
+            else {
+                String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
+                try{
+                    formattedData = m_formatter.transform(data);
+                } catch (FormatException e) {
+                    LOGGER.error(String.format("Error for offset: %s",data), e);
+                    continue;
+                }
             }
             try {
                 ConnectorProcedureCallback cb = new ConnectorProcedureCallback(m_flushSet, partitionOffset);
@@ -212,18 +228,18 @@ public class ConnectorTask extends SinkTask {
     @Override
     public void flush(Map<TopicPartition, OffsetAndMetadata> offsets) {
 
-        if(m_currentBatchCnt.get() > 0){
+        if (m_currentBatchCnt.get() > 0) {
             try {
                 m_client.drain();
-                if(LOGGER.isInfoEnabled()){
+                if (LOGGER.isInfoEnabled()) {
                     LOGGER.info(String.format("Flush offset for batch count: %d", m_currentBatchCnt.get()));
                 }
             } catch (NoConnectionsException | InterruptedException e) {
                 LOGGER.error(e);
                 throw new ConnectException("ConnectorTask flush: there are uncommited records.");
-            } finally{
+            } finally {
                 m_currentBatchCnt.set(0);
-                if(!m_flushSet.isEmpty()){
+                if (!m_flushSet.isEmpty()) {
                     m_flushSet.clear();
 
                     //there are still records unaccounted for, let framework to re-put these records.
@@ -278,12 +294,64 @@ public class ConnectorTask extends SinkTask {
 
     }
 
-    public static String  getStringProperty(Map<String, String> props, String propName, String defaultValue){
+    public static String getStringProperty(Map<String, String> props, String propName, String defaultValue){
 
         String valString = props.get(propName);
         valString = (valString == null) ? "" : valString.trim();
         return (valString.isEmpty() ? defaultValue : valString);
 
+    }
+
+    private Object[] getDataFromSchemaRecord(SinkRecord  record) {
+        List<Object> dataList = new ArrayList<Object>();
+        for(org.apache.kafka.connect.data.Field field : record.valueSchema().fields()) {
+            Struct valueStruct = (Struct) record.value();
+            Object value = valueStruct.get(field);
+            value = getSchemaFieldValue(field.schema(), value);
+            dataList.add(value);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Schema name: " + record.valueSchema().name() + ", field: " + field.name() +
+                        ", type: " + field.schema().type() + ", value: " + value);
+            }
+        }
+        return dataList.toArray();
+    }
+
+    private Object getSchemaFieldValue(Schema schema, Object value) {
+        if (value == null) {
+            return null;
+        }
+        else {
+            switch (schema.type()) {
+            case INT8:
+                return (Byte) value;
+            case INT16:
+                return (Short) value;
+            case INT32:
+                return (Integer) value;
+            case INT64:
+                return (Long) value;
+            case FLOAT32:
+                return (Float) value;
+            case FLOAT64:
+                return (Double) value;
+            case STRING:
+                return (String) value;
+            case BYTES:
+                final byte[] bytes;
+                if (value instanceof ByteBuffer) {
+                    final ByteBuffer buffer = ((ByteBuffer) value).slice();
+                    bytes = new byte[buffer.remaining()];
+                    buffer.get(bytes);
+                }
+                else {
+                    bytes = (byte[]) value;
+                }
+                return bytes;
+            default:
+                throw new ConnectException("Unsupported source data type: " + schema.type());
+            }
+        }
     }
 
     /**
