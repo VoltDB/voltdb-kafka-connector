@@ -53,7 +53,6 @@ public class KafkaSinkConnector extends Connector {
         try {
             m_configProperties = props;
             String connectorName = ConnectorTask.getStringProperty(props, ConnectorConfig.CONNECTOR_NAME, null);
-            //todo: check if it can be done by providing default values itself
             if(connectorName == null){
                 m_configProperties.put(ConnectorConfig.CONNECTOR_NAME,"KafkaSinkConnector");
             }

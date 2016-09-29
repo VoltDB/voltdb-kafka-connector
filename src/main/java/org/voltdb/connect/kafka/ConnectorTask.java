@@ -25,6 +25,7 @@
 package org.voltdb.connect.kafka;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -39,9 +40,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
+import org.apache.kafka.connect.data.Date;
+import org.apache.kafka.connect.data.Decimal;
 import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.data.Time;
+import org.apache.kafka.connect.data.Timestamp;
 import org.apache.kafka.connect.errors.ConnectException;
+import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
@@ -317,11 +323,51 @@ public class ConnectorTask extends SinkTask {
         return dataList.toArray();
     }
 
+    private interface LogicalTypeConverter {
+        Object convert(Schema schema, Object value);
+    }
+
+    private Object getValueFromLogicalType(Schema schema, Object value) {
+        if (schema.name().equals(Decimal.LOGICAL_NAME)) {
+            if (!(value instanceof BigDecimal)) {
+                throw new DataException("Invalid type for Decimal, underlying representation "
+                        + "should be BigDecimal but was " + value.getClass());
+            }
+            return Decimal.fromLogical(schema, (BigDecimal) value);
+        }
+        if (schema.name().equals(Date.LOGICAL_NAME)) {
+            if (!(value instanceof java.util.Date)) {
+                throw new DataException("Invalid type for Date, underlying representation should "
+                        + "be java.util.Date but was " + value.getClass());
+            }
+            return Date.fromLogical(schema, (java.util.Date) value);
+        }
+
+        if (schema.name().equals(Time.LOGICAL_NAME)) {
+            if (!(value instanceof java.util.Date)) {
+                throw new DataException("Invalid type for Time, underlying representation should "
+                        + "be java.util.Date but was " + value.getClass());
+            }
+            return Time.fromLogical(schema, (java.util.Date) value);
+        }
+
+        if (schema.name().equals(Timestamp.LOGICAL_NAME)) {
+            if (!(value instanceof java.util.Date)) {
+                throw new DataException("Invalid type for Timestamp, underlying representation should "
+                        + "be java.util.Date but was " + value.getClass());
+            }
+            return Timestamp.fromLogical(schema, (java.util.Date) value);
+        }
+        return value;
+    }
     private Object getSchemaFieldValue(Schema schema, Object value) {
         if (value == null) {
             return null;
         }
         else {
+            if (schema.name() != null) {
+                value = getValueFromLogicalType(schema, value);
+            }
             switch (schema.type()) {
             case INT8:
                 return (Byte) value;
@@ -348,8 +394,11 @@ public class ConnectorTask extends SinkTask {
                     bytes = (byte[]) value;
                 }
                 return bytes;
+            case BOOLEAN:
+                // in kafka this is represented as 1 or 0; though boolean is not supported in voltdb
+                // so treat as error case for VoltDB at present
             default:
-                throw new ConnectException("Unsupported source data type: " + schema.type());
+                throw new ConnectException("Unsupported data type read from kafka source: " + schema.type());
             }
         }
     }
