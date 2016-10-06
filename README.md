@@ -96,7 +96,7 @@ The connector is for moving data from Kafka to VoltDB.
 - **voltdb.connection.password** The password to connect VoltDB
 - **voltdb.servers** (mandatory) A list of Voltdb server nodes with ',' as delimiter. example: server1:21212,server2:21212
 - **voltdb.procedure** (mandatory) The procedure name to be used to insert data to VoltDB.
-- **formatter.factory.class** The data formatter factory used to convert Kafka data into the format required by VoltDB procedure.
+- **formatter.factory.class** The data formatter factory used to convert non-schema Kafka data into the format required by VoltDB procedure.
    *org.voltdb.connect.formatter.CSVFormatterFactory* is used as default.
 - **formatter.type** The type of formatter, such as csv, tsv.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
