@@ -1,6 +1,6 @@
 #### VoltDB Sink Connector
 
-The connector is for moving data from Kafka to VoltDB.
+The connector is for moving data from Kafka to VoltDB. The connector consumes kafka messages and produces procedure parameters for invoking procedures inside VoltDB. The procedure can be user defined procedure or standard TABLE CRUD procedure typically named as TABLENAME.insert (for insert). When the kafka messages have schema the schema is looked at to convert the values. If node schema is present message will converted as configured. 
 
 #### Setup
 
