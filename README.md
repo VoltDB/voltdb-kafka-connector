@@ -57,6 +57,7 @@ The connector is for moving data from Kafka to VoltDB. The connector consumes ka
    *org.voltdb.connect.formatter.CSVFormatterFactory* is used as default.
 - **formatter.type** The type of formatter, such as csv, tsv.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
+   * This property is only used if the kafka record does not have any value schema.
 - **kerberos.authentication** The authentication module if enabled.
 
 #### Connect JSON Properties (voltdb-sink-connector.json)
