@@ -30,7 +30,8 @@ plugins {
 
 archivesBaseName = 'voltdb-sink-connector'
 description = 'VoltDB Sink Connector'
-version = '1.0-SNAPSHOT'
+/* Change Version when updating */
+version = '1.0'
 
 repositories {
     mavenCentral()

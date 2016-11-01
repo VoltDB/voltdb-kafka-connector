@@ -44,50 +44,7 @@ The connector is for moving data from Kafka to VoltDB. The connector consumes ka
   example: path-to-kafka-root/voltdb/
 * copy /config/voltdb-sink-connector.properties, voltdb-sink-connector.json to a folder and configure connector properties
 * configure connect-standalone.properties or connect-distributed.properties under path-to-kafka-root/config/
-
-#### Distributed Connect Properties (connect-distributed.properties)
-- **bootstrap.servers** (mandatory) Kafka servers the connector will connect to.
-- **group.id** (mandatory) The unique name for the cluster, used in forming the Connect cluster group.
-- **offset.storage.topic** (mandatory) The Kafka topic to store connector offset state in. 
-  Although this topic can be auto-created if your cluster has auto topic creation enabled, 
-  it is highly recommended that you create it before starting the Kafka Connect cluster. 
-  To support large Kafka Connect clusters, this topic should have a large number of partitions and highly replicated.
-  This must be the same with the same group.id
-- **config.storage.topic** (mandatory) The Kafka topic to store connector and task configuration state in. 
-  Although this topic can be auto-created if your cluster has auto topic creation enabled, 
-  it is highly recommended that you create it before starting the Kafka Connect cluster. 
-  This topic should always have a single partition and be highly replicated.
-  This must be the same for with the same group.id
-- **status.storage.topic** (mandatory) Topic used for the storage of connector statuses will be created by Kafka.
-- **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
-- **topics** A list of topics to use as input for this connector.
-- **tasks.max** The maximum number of tasks that should be created for this connector.
-- **rest.port** (default: 8083) The port of the Kafka's REST interface listens on for HTTP requests
-- **key.converter**=org.voltdb.connect.json.JsonTransformer
-- **value.converter**=org.voltdb.connect.json.JsonTransformer
-- **internal.key.converter**=org.voltdb.connect.json.JsonTransformer
-- **internal.value.converter**=org.voltdb.connect.json.JsonTransformer
-
-  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
-  *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
-  *internal.value.converter.schemas.enable*.
-
-
-#### Standalone Connect Properties (connect-standalone.properties)
-- **bootstrap.servers** (mandatory) Kafka servers the connector will connect to.
-- **offset.flush.interval.ms** (default: 60000) The time interval between offset commits.
-- **offset.storage.file.filename** The file to store connector offsets.
-- **tasks.max** The maximum number of tasks that should be created for this connector
-- **rest.port** (default: 8083) The port the REST interface listens on for HTTP requests.
-- **key.converter**=org.voltdb.connect.json.JsonTransformer
-- **value.converter**=org.voltdb.connect.json.JsonTransformer
-- **internal.key.converter**=org.voltdb.connect.json.JsonTransformer
-- **internal.value.converter**=org.voltdb.connect.json.JsonTransformer
-
-  Current release of VoltDB Kafka sink connector does not support schema. Set the following properties to false:
-  *key.converter.schemas.enable*, *value.converter.schemas.enable*, *internal.key.converter.schemas.enable* and
-  *internal.value.converter.schemas.enable*.
-
+  For more details please see http://docs.confluent.io/3.0.1/connect/index.html
 
 #### Connect Properties (voltdb-sink-connector.properties)
 - **name** (default:KafkaSinkConnector) Unique name for the connector
