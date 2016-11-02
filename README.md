@@ -58,11 +58,11 @@ The connector is for moving data from Kafka to VoltDB. The connector consumes ka
 - **formatter.type** The type of formatter, such as csv, tsv.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
    * Formatter and converter properties are used if the kafka record does not have valid value schema. 
-   * Also when kafka records does not have schema you must modify following properties (standalone or distributed)
-       *key.converter* Update it to org.apache.kafka.connect.storage.StringConverter
-       *value.converter* Update it to org.apache.kafka.connect.storage.StringConverter
-       *key.converter.schemas.enable* Disable schema by setting it to false
-       *value.converter.schemas.enable* Disable schema by setting it to false
+   * Also when kafka records does not have schema you must modify following connector properties (standalone or distributed)
+       * **key.converter** Update it to org.apache.kafka.connect.storage.StringConverter
+       * **value.converter** Update it to org.apache.kafka.connect.storage.StringConverter
+       * **key.converter.schemas.enable** Disable schema by setting it to false
+       * **value.converter.schemas.enable** Disable schema by setting it to false
 - **kerberos.authentication** The authentication module if enabled.
 
 #### Connect JSON Properties (voltdb-sink-connector.json)
