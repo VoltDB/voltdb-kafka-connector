@@ -181,14 +181,14 @@ public class ConnectorTask extends SinkTask {
 
         for (SinkRecord record : records) {
 
-            if(m_connectionLost.get()){
+            if (m_connectionLost.get()) {
                 m_currentBatchCnt.set(0);
                 m_flushSet.clear();
                 //trigger Kafka consumer to pause and retry.
                 throw new RetriableException("All client connections to VoltDB have been lost.");
             }
 
-            if ((record.value() == null) && (record.valueSchema() == null)){
+            if (record.value() == null) {
                 LOGGER.error("The SinkRecord does not have schema or value defined.");
                 continue;
             }
@@ -197,7 +197,7 @@ public class ConnectorTask extends SinkTask {
             m_currentBatchCnt.getAndIncrement();
 
             Object[] formattedData = null;
-            if(record.valueSchema() != null) {
+            if (record.valueSchema() != null && record.valueSchema().type().equals(Schema.Type.STRUCT)) {
                 try {
                     formattedData = getDataFromSchemaRecord(record);
                 } catch (ConnectException e) {

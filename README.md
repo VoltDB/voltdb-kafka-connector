@@ -57,8 +57,20 @@ The connector is for moving data from Kafka to VoltDB. The connector consumes ka
    *org.voltdb.connect.formatter.CSVFormatterFactory* is used as default.
 - **formatter.type** The type of formatter, such as csv, tsv.
 - **data.converter.class** The Java class for data conversion from SinkRecord. *org.voltdb.connect.converter.JsonDataConverter* as default.
-   * This property is only used if the kafka record does not have any value schema.
+   * Formatter and converter properties are used if the kafka record does not have valid value schema. For this case update additional properites in appropriate connect file - distributed or standalone also.
 - **kerberos.authentication** The authentication module if enabled.
+
+### Distributed Connect Properties (connect-distributed.properties)
+- **key.converter** Update it to org.apache.kafka.connect.storage.StringConverter
+- **value.converter** Update it to org.apache.kafka.connect.storage.StringConverter
+- **key.converter.schemas.enable** Disable schema by setting it to false
+- **value.converter.schemas.enable** Disable schema by setting it to false
+
+### Standalone Connect Properties (connect-standalone.properties)
+- **key.converter** Update it to org.apache.kafka.connect.storage.StringConverter
+- **value.converter** Update it to org.apache.kafka.connect.storage.StringConverter
+- **key.converter.schemas.enable** Disable schema by setting it to false
+- **value.converter.schemas.enable** Disable schema by setting it to false
 
 #### Connect JSON Properties (voltdb-sink-connector.json)
 
@@ -116,6 +128,7 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
 * Start connector
 
     set **voltdb.procedure=stock.insert** for the connector.
+	set **topics=connect-test** for the kafka topic to consume from.
    ```
 	standalone mode:
     
