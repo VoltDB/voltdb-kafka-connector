@@ -125,7 +125,7 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
    ```
 	standalone mode:
     
-  	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar 	
+  	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-all.jar 	
   	
   	$./bin/connect-standalone.sh  config/connect-standalone.properties  voltdb/voltdb-sink-connector.properties
     ```
@@ -135,7 +135,7 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
     
     Unlike standalone mode where connector configurations are passed in via the command line, interaction with a distributed-mode cluster is via the REST API. 
  
-  	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-SNAPSHOT-all.jar 	 	
+  	$export CLASSPATH=path-to-kafka-root/voltdb/voltdb-sink-connector-1.0-all.jar 	 	
   	
   	$./bin/connect-distributed.sh  config/connect-distributed.properties
     
