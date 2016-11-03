@@ -6,9 +6,11 @@ The connector consumes Kafka log messages and invokes VoltDB stored procedures, 
 
 When the Kafka messages have schema metadata, the schema is used to convert the values. If no schema metadata is present, the message will converted as configured. 
 
-The VoltDB Kafka Sink Connector is available as source at github.com with build instructions in the next section, or as a ready to use Java jar file that can be added to your VoltDB installation.
+The VoltDB Kafka Sink Connector is available as source at [Github](https://github.com/VoltDB/voltdb-kafka-connector) with build instructions below, or as a ready to use Java jar file that can be added to your VoltDB installation, available for [download](http://voltdb.com)
 
 See "Installing the Connector" for next steps after building or downloading the Connector.
+
+Following sections discuss configuring the Connector and offer an example application that shows the Connector in action with VoltDB and a Kafka installation.
 
 #### Installing the Connector 
 
