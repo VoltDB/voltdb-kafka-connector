@@ -6,7 +6,7 @@ Build and installation instructions follow.
 
 See the [README](https://github.com/VoltDB/voltdb-kafka-connector) for configuration steps and instructions for running a simple demonstation application.
 
-The VoltDB Kafka Sink Connector is also available as a [download](https://www.voltdb.com/download-confluentconnector) -- a ready to use Java jar file that can be added to your VoltDB installation.
+The VoltDB Kafka Sink Connector is also available as a [download](https://www.voltdb.com/download-confluentconnector) 
 
 #### Building the Connector from source
 
