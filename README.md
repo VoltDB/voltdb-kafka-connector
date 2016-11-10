@@ -6,54 +6,25 @@ The connector consumes Kafka log messages and invokes VoltDB stored procedures, 
 
 When the Kafka messages have schema metadata, the schema is used to convert the values. If no schema metadata is present, the message will be converted as configured. 
 
-The VoltDB Kafka Sink Connector is available as source at [Github](https://github.com/VoltDB/voltdb-kafka-connector) with build instructions below, or as a ready to use Java jar file that can be added to your VoltDB installation, available for [download](https://www.voltdb.com/download-confluentconnector)
+The VoltDB Kafka Sink Connector is available as source at [Github](https://github.com/VoltDB/voltdb-kafka-connector) or as binary [HERE](https://www.voltdb.com/download-confluentconnector)
 
-See "Installing the Connector" for next steps after building or downloading the Connector.
+Following sections discuss installing and configuring the Connector and offer an example application that shows the Connector in action with VoltDB and a Kafka installation.
 
-Following sections discuss configuring the Connector and offer an example application that shows the Connector in action with VoltDB and a Kafka installation.
+#### Extract files from the download file
+* Untar the download file:
+```
+    $ tar xzvf voltdb-kafka-sink-connector-1.0.tar.gz
+```
+* add the directory to the Java CLASSPATH
+```
+    $ CLASSPATH=<dir that contains voltdb-sink-connector-1.0-all.jar>:$CLASSPATH
+```
+* template configuration files are in the "config" directory.
 
 #### Installing the Connector 
 
-All the scripts for running Kafka Connect use the CLASSPATH environment variable if it is set.
-* copy the built jar from `build/libs` to a directory where the Kafka server is installed or accessible, for example: path-to-kafka-root/voltdb/
-* copy config/voltdb-sink-connector.properties, voltdb-sink-connector.json to a folder and configure the connector properties as described in the next section
-* configure connect-standalone.properties or connect-distributed.properties under path-to-kafka-root/config. Note that Apache or Confluent Kafka distributions may have configuration files in different locations.
+* configure voltdb-sink-connector.properties in the "config" directory. You may copy the "config" directory to a location within the Kafka installation. Note that Apache or Confluent Kafka distributions may have configuration files in different locations.
 For more details please see http://docs.confluent.io/3.0.1/connect/index.html
-
-#### Building the Connector from source
-
-* Install Gradle
-
-	On Mac OS X use [Homebrew](http://brew.sh/) to install gradle
-
-	```bash
-	brew install gradle
-	```
-	On Linux setup [SDK](http://sdkman.io/), and install gradle as follows
-	
-	```bash
-	sdk install gradle
-	```
-* Create `gradle.properties` file
-
-	```bash
-	echo voltdbhome=/voltdb/home/dirname > gradle.properties
-    set the `voltdbhome` property to the base directory where your VoltDB is installed
-    set the `dbversion` property to the VoltDB build version
-	```
-
-* Compile artifacts
-
-	```bash
-    gradle prepare zip shadowJar
-	```
-
-* To setup an Eclipse project, run gradle as follows
-
-	```bash
-    gradle cleanEclipse eclipse
-	```
-	then import it into your Eclipse workspace by using File->Import projects menu option, and add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to the classpath.
 
 #### Connect Properties (voltdb-sink-connector.properties)
 - **name** (default:KafkaSinkConnector) Unique name for the connector
@@ -96,7 +67,7 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
 	}
 ```
 
-#### Instructions for running
+#### Running a Sample Application using VoltDB kafka Sink connector
 
 * Download and install [Kafka](http://kafka.apache.org/downloads.html) 0.10.0.0 or later
 * Start VoltDB, create correct table and store procedure for the connector:
