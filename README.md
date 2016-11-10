@@ -6,11 +6,9 @@ The connector consumes Kafka log messages and invokes VoltDB stored procedures, 
 
 When the Kafka messages have schema metadata, the schema is used to convert the values. If no schema metadata is present, the message will be converted as configured. 
 
-The VoltDB Kafka Sink Connector is available as source at [Github](https://github.com/VoltDB/voltdb-kafka-connector) with build instructions below, or as a ready to use Java jar file that can be added to your VoltDB installation, available for [download](https://www.voltdb.com/download-confluentconnector)
+The VoltDB Kafka Sink Connector is available as source at [Github](https://github.com/VoltDB/voltdb-kafka-connector) or as binary [HERE](https://www.voltdb.com/download-confluentconnector)
 
-See "Installing the Connector" for next steps after building or downloading the Connector.
-
-Following sections discuss configuring the Connector and offer an example application that shows the Connector in action with VoltDB and a Kafka installation.
+Following sections discuss installing and configuring the Connector and offer an example application that shows the Connector in action with VoltDB and a Kafka installation.
 
 #### Extract files from the download file
 * Untar the download file:
@@ -25,7 +23,7 @@ Following sections discuss configuring the Connector and offer an example applic
 
 #### Installing the Connector 
 
-* configure connect-standalone.properties or connect-distributed.properties in the "config" directory. You may copy the "config" directory to a location within the Kafka installation. Note that Apache or Confluent Kafka distributions may have configuration files in different locations.
+* configure voltdb-sink-connector.properties in the "config" directory. You may copy the "config" directory to a location within the Kafka installation. Note that Apache or Confluent Kafka distributions may have configuration files in different locations.
 For more details please see http://docs.confluent.io/3.0.1/connect/index.html
 
 #### Connect Properties (voltdb-sink-connector.properties)
@@ -69,7 +67,7 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
 	}
 ```
 
-#### Instructions for running
+#### Running a Sample Application using VoltDB kafka Sink connector
 
 * Download and install [Kafka](http://kafka.apache.org/downloads.html) 0.10.0.0 or later
 * Start VoltDB, create correct table and store procedure for the connector:
