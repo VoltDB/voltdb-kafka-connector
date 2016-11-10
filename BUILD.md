@@ -2,11 +2,11 @@
 
 The VoltDB Kafka Sink Connector provides a simple, continuous link from a Kafka topic or set of topics to a VoltDB table or set of VoltDB tables.
 
-The VoltDB Kafka Sink Connector is also available as a [download](https://www.voltdb.com/download-confluentconnector) -- a ready to use Java jar file that can be added to your VoltDB installation.
-
 Build and installation instructions follow.
 
-See the [README](https://github.com/VoltDB/voltdb-kafka-connector) for setup configuration and instructions for running a simple demonstation application.
+See the [README](https://github.com/VoltDB/voltdb-kafka-connector) for configuration steps and instructions for running a simple demonstation application.
+
+The VoltDB Kafka Sink Connector is also available as a [download](https://www.voltdb.com/download-confluentconnector) -- a ready to use Java jar file that can be added to your VoltDB installation.
 
 #### Building the Connector from source
 
