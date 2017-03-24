@@ -80,7 +80,7 @@ public class ConnectorTask extends SinkTask {
     /**
      * <code>m_formatter</code> The formatter to converting kafka data into the data format required by VoltDB procedure
      */
-    private Formatter<String> m_formatter;
+    private Formatter m_formatter;
 
     /**
      * <code>m_converter</code> Convert the value of SinkRecord to byte array.
@@ -206,11 +206,10 @@ public class ConnectorTask extends SinkTask {
                 }
             }
             else {
-                String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
                 try{
-                    formattedData = m_formatter.transform(data);
+                    formattedData = m_formatter.transform(m_converter.convert(record));
                 } catch (FormatException e) {
-                    LOGGER.error(String.format("Error for offset: %s",data), e);
+                    LOGGER.error("Error transforming record: ", e);
                     continue;
                 }
             }
