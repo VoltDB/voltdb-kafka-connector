@@ -207,7 +207,7 @@ public class ConnectorTask extends SinkTask {
             }
             else {
                 try{
-                    formattedData = m_formatter.transform(m_converter.convert(record));
+                    formattedData = m_formatter.transform(ByteBuffer.wrap(m_converter.convert(record)));
                 } catch (FormatException e) {
                     LOGGER.error("Error transforming record: ", e);
                     continue;
