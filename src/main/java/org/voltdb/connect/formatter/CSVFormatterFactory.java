@@ -40,7 +40,7 @@ public class CSVFormatterFactory extends AbstractFormatterFactory {
 
 
     @Override
-    public Formatter<String> create(String formatName, Properties props) {
+    public Formatter create(String formatName, Properties props) {
         if(useSuperCsv(props)){
             return new VoltSuperCSVFormatter(formatName, props);
         }

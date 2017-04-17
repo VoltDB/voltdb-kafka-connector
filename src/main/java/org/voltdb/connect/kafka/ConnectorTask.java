@@ -37,6 +37,20 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.voltcore.logging.VoltLogger;
+
+import org.voltdb.client.Client;
+import org.voltdb.client.ClientConfig;
+import org.voltdb.client.ClientFactory;
+import org.voltdb.client.ClientResponse;
+import org.voltdb.client.ClientStatusListenerExt;
+import org.voltdb.client.NoConnectionsException;
+import org.voltdb.client.ProcedureCallback;
+import org.voltdb.connect.converter.Converter;
+import org.voltdb.connect.formatter.AbstractFormatterFactory;
+import org.voltdb.importer.formatter.FormatException;
+import org.voltdb.importer.formatter.Formatter;
+
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.ConfigException;
@@ -51,18 +65,6 @@ import org.apache.kafka.connect.errors.DataException;
 import org.apache.kafka.connect.errors.RetriableException;
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
-import org.voltcore.logging.VoltLogger;
-import org.voltdb.client.Client;
-import org.voltdb.client.ClientConfig;
-import org.voltdb.client.ClientFactory;
-import org.voltdb.client.ClientResponse;
-import org.voltdb.client.ClientStatusListenerExt;
-import org.voltdb.client.NoConnectionsException;
-import org.voltdb.client.ProcedureCallback;
-import org.voltdb.connect.converter.Converter;
-import org.voltdb.connect.formatter.AbstractFormatterFactory;
-import org.voltdb.importer.formatter.FormatException;
-import org.voltdb.importer.formatter.Formatter;
 
 import com.google_voltpatches.common.base.Splitter;
 import com.google_voltpatches.common.base.Throwables;
@@ -80,7 +82,7 @@ public class ConnectorTask extends SinkTask {
     /**
      * <code>m_formatter</code> The formatter to converting kafka data into the data format required by VoltDB procedure
      */
-    private Formatter<String> m_formatter;
+    private Formatter m_formatter;
 
     /**
      * <code>m_converter</code> Convert the value of SinkRecord to byte array.
@@ -208,7 +210,7 @@ public class ConnectorTask extends SinkTask {
             else {
                 String data = new String(m_converter.convert(record), StandardCharsets.UTF_8);
                 try{
-                    formattedData = m_formatter.transform(data);
+                    formattedData = m_formatter.transform(ByteBuffer.wrap(m_converter.convert(record)));
                 } catch (FormatException e) {
                     LOGGER.error(String.format("Error for offset: %s",data), e);
                     continue;

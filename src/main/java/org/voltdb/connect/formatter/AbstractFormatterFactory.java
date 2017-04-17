@@ -41,6 +41,6 @@ public abstract class AbstractFormatterFactory {
      * @param props - the properties used for the construction of formatter.
      * @return formatter instance created with the importer id
      */
-    public abstract Formatter<String> create(String  formatName, Properties props);
+    public abstract Formatter create(String  formatName, Properties props);
 
 }
