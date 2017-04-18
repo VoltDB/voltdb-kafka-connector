@@ -126,6 +126,11 @@ When kafka records does not have schema you must add following connector propert
 
     set **voltdb.procedure=stock.insert** for the connector.
 	set **topics=connect-test** for the kafka topic to consume from.
+
+	Set schema enable properties to false, in kafka connect property files (config/connect-standalone.properties for standalone mode, config/connect-distributed.properties for distributed mode).
+	**key.converter.schemas.enable=false**
+	**value.converter.schemas.enable=false**
+
    ```
 	standalone mode:
     
