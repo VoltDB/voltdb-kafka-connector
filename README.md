@@ -62,9 +62,23 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
       		"formatter.type":"csv",
       		"data.converter.class":"org.voltdb.connect.converter.JsonDataConverter",
       		"topics":"testTopic",
-      		"kerberos.authentication":"false"
-   		}
-	}
+            "kerberos.authentication":""
+        }
+    }
+```
+When kafka records does not have schema you must add following connector properties to config object
+```
+    {
+        "name":"KafkaSinkConnector",
+        "config":{
+            ...
+            "key.converter":"org.apache.kafka.connect.storage.StringConverter",
+            "value.converter":"org.apache.kafka.connect.storage.StringConverter",
+            "key.converter.schemas.enable":"false",
+            "value.converter.schemas.enable":"false",
+            ...
+        }
+    }
 ```
 
 #### Running a Sample Application using VoltDB kafka Sink connector
@@ -98,10 +112,25 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
     ```
    $./bin/kafka-topics.sh --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic connect-test
     ```
+
+
+    ```
+   For distributed mode, create topics for shared storage offset, connector config and status.
+
+   $./bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic connect-configs --replication-factor 1 --partitions 1
+   $./bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic connect-status --replication-factor 1 --partitions 10
+   $./bin/kafka-topics.sh --create --zookeeper localhost:2181 --topic connect-offsets --replication-factor 1 --partitions 50
+    ```
+
 * Start connector
 
     set **voltdb.procedure=stock.insert** for the connector.
 	set **topics=connect-test** for the kafka topic to consume from.
+
+	Set schema enable properties to false, in kafka connect property files (config/connect-standalone.properties for standalone mode, config/connect-distributed.properties for distributed mode).
+	**key.converter.schemas.enable=false**
+	**value.converter.schemas.enable=false**
+
    ```
 	standalone mode:
     
@@ -125,7 +154,7 @@ The json file contains the same properties as voltdb-sink-connector.properties. 
     Connector verification:
     $curl -i -X GET "http://localhost:8083/connectors/KafkaSinkConnector"
     
-    Connector removal:
+    Connector removal (remove sink connector once ingesting of data is completed):
     $curl -i -X DELETE "http://localhost:8083/connectors/KafkaSinkConnector"
     
 	 ```
