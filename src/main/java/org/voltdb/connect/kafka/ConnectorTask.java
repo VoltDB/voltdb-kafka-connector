@@ -129,7 +129,7 @@ public class ConnectorTask extends SinkTask {
 
         String autoReconnect = getStringProperty(props, ConnectorConfig.AUTO_RECONNECTION, "true");
         if("true".equalsIgnoreCase(autoReconnect)){
-             config.setReconnectOnConnectionLoss(true);
+            config.setTopologyChangeAware(true);
         }
 
         config.setConnectionResponseTimeout(getIntProperty(props, ConnectorConfig.RESPONSE_TIMEOUT_MAX, 0));

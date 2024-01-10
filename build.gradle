@@ -25,7 +25,7 @@
 plugins {
   id 'java'
   id 'eclipse'
-  id 'com.github.johnrengelman.shadow' version '1.2.3'
+  id 'com.github.johnrengelman.shadow' version '7.0.0'
 }
 
 archivesBaseName = 'voltdb-sink-connector'
@@ -43,13 +43,40 @@ configurations {
     connect
 }
 
-def volt = fileTree(dir: "${voltdbhome}/voltdb", include: "voltdbclient-${dbversion}.jar")
-def formatter = fileTree(dir: "${buildDir}/distributions", include: "${archivesBaseName}-${version}.zip")
+def voltdbclient = "${voltdbhome}/voltdb/voltdbclient-${dbversion}.jar"
+def voltdb = "${voltdbhome}/voltdb/voltdb-${dbversion}.jar"
 
+if (!file(voltdbclient).exists()) {
+    throw new GradleException("Cannot find JAR file: " + voltdbclient)
+}
+if (!file(voltdb).exists()) {
+    throw new GradleException("Cannot find JAR file: " + voltdb)
+}
+
+tasks.register('prepare', Copy) {
+    def zipFile = file(voltdb)
+    def outputDir = file("${buildDir}/unpacked/")
+
+    outputs.dir(outputDir)
+
+    from zipTree(zipFile)
+    into outputDir
+    include 'org/voltdb/importer/formatter/**'
+    include 'au/com/bytecode/opencsv_voltpatches/**'
+}
+
+tasks.register('zip', Zip) {
+    from tasks.prepare
+}
 
 dependencies {
-    voltlib volt
-    voltlib formatter
+    voltlib files(voltdbclient)
+    voltlib files("${buildDir}/unpacked/") {
+        builtBy(tasks.prepare)
+    }
+    voltlib files("${buildDir}/distributions/${archivesBaseName}-${version}.zip") {
+        builtBy(tasks.zip)
+    }
     connect ('org.apache.kafka:connect-api:0.10.0.0') { transitive = false }
     connect ('org.apache.kafka:kafka-clients:0.10.0.0') { transitive = false }
     connect ('org.apache.kafka:connect-json:0.10.0.0') { transitive = false }
@@ -57,26 +84,13 @@ dependencies {
     voltlib ('com.fasterxml.jackson.core:jackson-annotations:2.5.3') { transitive = true }
     voltlib ('com.fasterxml.jackson.core:jackson-core:2.5.3') { transitive = true }
     voltlib ('com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.5.3') { transitive = true }
-    
-    compile configurations.connect
-    compile configurations.voltlib
+
+    implementation configurations.connect
+    implementation configurations.voltlib
 }
 
 shadowJar {
+    from project.configurations.voltlib
+
     mergeServiceFiles()
-    configurations = [project.configurations.voltlib]
-}
-
-task prepare(type: Copy) {
-    def zipFile = file("${voltdbhome}/voltdb/voltdb-${dbversion}.jar")
-    def outputDir = file("${buildDir}/unpacked/")
-
-    from zipTree(zipFile)
-    into outputDir
-}
-
-task zip(type: Zip) {
-    from "${buildDir}/unpacked/"
-    include 'org/voltdb/importer/formatter/**'
-    include 'au/com/bytecode/opencsv_voltpatches/**'
 }

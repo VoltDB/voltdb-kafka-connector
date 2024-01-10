@@ -10,19 +10,7 @@ The VoltDB Kafka Sink Connector is also available as a [download](https://www.vo
 
 #### Building the Connector from source
 
-* Install Gradle
-
-	On Mac OS X use [Homebrew](http://brew.sh/) to install gradle
-
-	```bash
-	brew install gradle
-	```
-	On Linux setup [SDK](http://sdkman.io/), and install gradle as follows
-	
-	```bash
-	sdk install gradle
-	```
-* Create `gradle.properties` file
+* Ensure `gradle.properties` file contains valid values
 
 	```bash
 	echo voltdbhome=/voltdb/home/dirname > gradle.properties
@@ -33,13 +21,13 @@ The VoltDB Kafka Sink Connector is also available as a [download](https://www.vo
 * Compile artifacts
 
 	```bash
-    gradle prepare zip shadowJar
+    ./gradlew clean shadowJar
 	```
 
 * To setup an Eclipse project, run gradle as follows
 
 	```bash
-    gradle cleanEclipse eclipse
+    ./gradlew cleanEclipse eclipse
 	```
 	then import it into your Eclipse workspace by using File->Import projects menu option, and add connect-api-0.10.0.0.jar, connect-json-0.10.0.0.jar and kafka-clients-1.10.0.0.jar to the classpath.
 
