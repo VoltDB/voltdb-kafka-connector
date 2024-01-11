@@ -53,21 +53,8 @@ if (!file(voltdb).exists()) {
     throw new GradleException("Cannot find JAR file: " + voltdb)
 }
 
-tasks.register('prepare', Copy) {
-    def zipFile = file(voltdb)
-    def outputDir = file("${buildDir}/unpacked/")
-
-    outputs.dir(outputDir)
-
-    from zipTree(zipFile)
-    into outputDir
-    include 'org/voltdb/importer/formatter/**'
-    include 'au/com/bytecode/opencsv_voltpatches/**'
-}
-
-tasks.register('zip', Zip) {
-    from tasks.prepare
-}
+tasks.register('prepare', Copy)
+tasks.register('zip', Zip)
 
 dependencies {
     voltlib files(voltdbclient)
@@ -93,4 +80,20 @@ shadowJar {
     from project.configurations.voltlib
 
     mergeServiceFiles()
+}
+
+zip {
+    from tasks.prepare
+}
+
+prepare {
+    def zipFile = file(voltdb)
+    def outputDir = file("${buildDir}/unpacked/")
+
+    outputs.dir(outputDir)
+
+    from zipTree(zipFile)
+    into outputDir
+    include 'org/voltdb/importer/formatter/**'
+    include 'au/com/bytecode/opencsv_voltpatches/**'
 }
